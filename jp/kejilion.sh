@@ -1556,7 +1556,7 @@ fi
 
 add_yuming() {
 	  ip_address
-	  echo -e "最初にドメイン名をローカルIPに解決します。${gl_huang}$ipv4_address  $ipv6_address${gl_bai}"
+	  echo -e "最初にドメイン名をネイティブIPに解決します。${gl_huang}$ipv4_address  $ipv6_address${gl_bai}"
 	  read -e -p "IPまたは解決されたドメイン名を入力してください：" yuming
 }
 
@@ -1738,7 +1738,7 @@ nginx_waf() {
 		wget -O /home/web/nginx.conf "${gh_proxy}raw.githubusercontent.com/kejilion/nginx/main/nginx10.conf"
 	fi
 
-	# モードパラメーターに従ってWAFをオンまたはオフにすることにしました
+	# モードパラメーターに従ってWAFをオンまたはオフにすることを決定します
 	if [ "$mode" == "on" ]; then
 		# WAFをオンにしてください：コメントを削除します
 		sed -i 's|# load_module /etc/nginx/modules/ngx_http_modsecurity_module.so;|load_module /etc/nginx/modules/ngx_http_modsecurity_module.so;|' /home/web/nginx.conf > /dev/null 2>&1
@@ -7687,7 +7687,7 @@ linux_ldnmp() {
 	  echo "Redisポート：6379"
 	  echo ""
 	  echo "ウェブサイトURL：https：//$yuming"
-	  echo "バックグラウンドログインパス： /admin"
+	  echo "バックエンドログインパス： /admin"
 	  echo "------------------------"
 	  echo "ユーザー名：admin"
 	  echo "パスワード：管理者"
@@ -11509,7 +11509,7 @@ EOF
 				echo "3。日本の東京時間4。韓国のソウル時間"
 				echo "5。シンガポール時間6。インドのコルカタ時間"
 				echo "7。アラブ首長国連邦のドバイ時間8。オーストラリアのシドニー時間"
-				echo "9。タイのバンコクでの時間"
+				echo "9。バンコク・タイム、タイ"
 				echo "------------------------"
 				echo "ヨーロッパ"
 				echo "11。英国のロンドン時間12。パリの時間フランスの時間"

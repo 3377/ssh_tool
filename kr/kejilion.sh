@@ -34,7 +34,7 @@ quanju_canshu
 
 
 
-# 명령을 실행하는 함수를 정의합니다
+# 명령을 실행할 함수를 정의합니다
 run_command() {
 	if [ "$zhushi" -eq 0 ]; then
 		"$@"
@@ -1556,7 +1556,7 @@ fi
 
 add_yuming() {
 	  ip_address
-	  echo -e "먼저 도메인 이름을 로컬 IP로 해결합니다.${gl_huang}$ipv4_address  $ipv6_address${gl_bai}"
+	  echo -e "먼저 도메인 이름을 기본 IP로 해결합니다.${gl_huang}$ipv4_address  $ipv6_address${gl_bai}"
 	  read -e -p "IP 또는 해결 된 도메인 이름을 입력하십시오." yuming
 }
 
@@ -4513,7 +4513,7 @@ sed -i 's/^\s*#\?\s*PermitRootLogin.*/PermitRootLogin yes/g' /etc/ssh/sshd_confi
 sed -i 's/^\s*#\?\s*PasswordAuthentication.*/PasswordAuthentication yes/g' /etc/ssh/sshd_config;
 rm -rf /etc/ssh/sshd_config.d/* /etc/ssh/ssh_config.d/*
 restart_ssh
-echo -e "${gl_lv}루트 로그인이 설정되었습니다!${gl_bai}"
+echo -e "${gl_lv}루트 로그인 설정이 완료되었습니다!${gl_bai}"
 
 }
 
@@ -4986,7 +4986,7 @@ elrepo_install() {
 		linux_Settings
 	fi
 	# 감지 된 운영 체제 정보를 인쇄합니다
-	echo "운영 체제 감지 :$os_name $os_version"
+	echo "감지 된 운영 체제 :$os_name $os_version"
 	# 시스템 버전에 따라 해당 Elrepo 창고 구성을 설치하십시오.
 	if [[ "$os_version" == 8 ]]; then
 		echo "Elrepo 저장소 구성 (버전 8)을 설치하십시오 ..."
@@ -11040,7 +11040,7 @@ linux_Settings() {
 	  echo -e "${gl_kjlan}17.  ${gl_bai}방화벽 고급 관리자${gl_kjlan}18.  ${gl_bai}호스트 이름을 수정하십시오"
 	  echo -e "${gl_kjlan}19.  ${gl_bai}스위치 시스템 업데이트 소스${gl_kjlan}20.  ${gl_bai}타이밍 작업 관리"
 	  echo -e "${gl_kjlan}------------------------"
-	  echo -e "${gl_kjlan}21.  ${gl_bai}기본 호스트 구문 분석${gl_kjlan}22.  ${gl_bai}SSH 방어 프로그램"
+	  echo -e "${gl_kjlan}21.  ${gl_bai}기본 호스트 분석${gl_kjlan}22.  ${gl_bai}SSH 방어 프로그램"
 	  echo -e "${gl_kjlan}23.  ${gl_bai}현재 한도의 자동 종료${gl_kjlan}24.  ${gl_bai}루트 비공개 키 로그인 모드"
 	  echo -e "${gl_kjlan}25.  ${gl_bai}TG-BOT 시스템 모니터링 및 조기 경고${gl_kjlan}26.  ${gl_bai}OpenSsh 고위험 취약점을 수정하십시오"
 	  echo -e "${gl_kjlan}27.  ${gl_bai}Red Hat Linux 커널 업그레이드${gl_kjlan}28.  ${gl_bai}Linux 시스템에서 커널 매개 변수의 최적화${gl_huang}★${gl_bai}"
