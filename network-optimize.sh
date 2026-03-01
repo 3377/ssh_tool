@@ -292,6 +292,26 @@ net.ipv4.tcp_notsent_lowat = 16384"
         CONNTRACK_MAX=32768
     fi
 
+    # ── 根据内存大小设定 VM 参数 ──
+    local SWAPPINESS MIN_FREE_KB
+    if [ "$MEM_MB" -ge 16384 ]; then
+        # 16G+ 大内存：激进
+        SWAPPINESS=5
+        MIN_FREE_KB=131072
+    elif [ "$MEM_MB" -ge 4096 ]; then
+        # 4G-16G：标准
+        SWAPPINESS=10
+        MIN_FREE_KB=65536
+    elif [ "$MEM_MB" -ge 1024 ]; then
+        # 1G-4G：保守
+        SWAPPINESS=20
+        MIN_FREE_KB=32768
+    else
+        # <1G：极度保守
+        SWAPPINESS=30
+        MIN_FREE_KB=16384
+    fi
+
     # ── BBR 检测与加载 ──
     title "TCP 拥塞算法优化"
     local USE_BBR=false
@@ -391,6 +411,18 @@ net.ipv4.conf.default.send_redirects = 0
 net.ipv6.conf.all.accept_redirects = 0
 net.ipv6.conf.default.accept_redirects = 0
 
+# ── 虚拟内存优化 ──
+vm.swappiness = $SWAPPINESS
+vm.dirty_ratio = 15
+vm.dirty_background_ratio = 5
+vm.overcommit_memory = 1
+vm.min_free_kbytes = $MIN_FREE_KB
+vm.vfs_cache_pressure = 50
+
+# ── CPU/内核调度优化 ──
+kernel.sched_autogroup_enabled = 0
+$([ -f /proc/sys/kernel/numa_balancing ] && echo "kernel.numa_balancing = 0" || echo "# numa_balancing 不支持，跳过")
+
 # ── 文件描述符 ──
 fs.file-max = 1048576
 fs.nr_open = 1048576
@@ -422,6 +454,12 @@ SYSCTL
         done
     fi
     ok "sysctl 参数已应用"
+
+    # ── 禁用透明大页面（减少延迟抖动） ──
+    if [ -f /sys/kernel/mm/transparent_hugepage/enabled ]; then
+        echo never > /sys/kernel/mm/transparent_hugepage/enabled 2>/dev/null && \
+        ok "透明大页面已禁用" || warn "透明大页面禁用失败"
+    fi
 
     # ── 设置文件描述符限制 ──
     if ! grep -q "# network-optimize" /etc/security/limits.conf 2>/dev/null; then
@@ -553,5 +591,18 @@ show_network_status() {
 # ========================
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]] || [[ -z "${BASH_SOURCE[0]}" ]]; then
-    auto_optimize_network
+    # 支持参数: bash xxx.sh restore / bash xxx.sh status
+    # 支持环境变量: ACTION=restore curl ... | bash
+    _action="${1:-${ACTION:-optimize}}"
+    case "$_action" in
+        restore|rollback|回滚)
+            restore_network_defaults
+            ;;
+        status|状态)
+            show_network_status
+            ;;
+        *)
+            auto_optimize_network
+            ;;
+    esac
 fi
