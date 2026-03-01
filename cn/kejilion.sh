@@ -9806,13 +9806,13 @@ moltbot_menu() {
 			first=false
 			
 			# 根据模型名称推断上下文窗口（OpenRouter 2026-03 校准）
-			local context_window=131072
-			local max_tokens=8192
-			local input_cost=0.15
-			local output_cost=0.60
+			local context_window=1048576
+			local max_tokens=128000
+			local input_cost=1.00
+			local output_cost=6.00
 			
 			case "$model_id" in
-				*preview*|*thinking*|*opus*|*pro*)
+				*preview*|*thinking*|*opus*|*pro*|*sonnet*)
 					context_window=1048576  # 1M
 					max_tokens=128000
 					input_cost=2.00
@@ -9831,8 +9831,6 @@ moltbot_menu() {
 					output_cost=0.40
 					;;
 			esac
-
-
 
 
 			models_array+=$(cat <<EOF
