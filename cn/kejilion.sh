@@ -12,7 +12,7 @@ gl_zi='\033[35m'
 gl_kjlan='\033[96m'
 
 
-canshu="CN"
+canshu="default"
 permission_granted="true"
 ENABLE_STATS="true"
 
@@ -9804,33 +9804,89 @@ moltbot_menu() {
 		while read -r model_id; do
 			[[ $first == false ]] && models_array+=","
 			first=false
+			
+			# 智能推断模型参数（基于 OpenRouter 2026-03 数据校准）
 
-			# 根据模型名称推断上下文窗口
 			local context_window=131072
 			local max_tokens=8192
-			local input_cost=0.14
-			local output_cost=0.28
+			local input_cost=0.15
+			local output_cost=0.60
 
 			case "$model_id" in
-				*preview*|*thinking*|*opus*|*pro*)
-					context_window=1048576  # 1M
-					max_tokens=16384
-					input_cost=0.30
-					output_cost=0.60
+				*opus*4.6*|*opus*4.5*|*sonnet*4.6*|*sonnet*4.5*|*sonnet-4*)
+					context_window=1000000
+					max_tokens=128000
+					input_cost=3.00
+					output_cost=15.00
 					;;
-				*gpt-5*|*codex*)
-					context_window=131072   # 128K
-					max_tokens=8192
-					input_cost=0.20
+				*opus-4*|*opus*4.1*)
+					context_window=200000
+					max_tokens=32000
+					input_cost=15.00
+					output_cost=75.00
+					;;
+				*haiku*4.5*|*haiku*)
+					context_window=200000
+					max_tokens=64000
+					input_cost=0.80
+					output_cost=4.00
+					;;
+				*gpt-5.3*|*gpt-5.2*)
+					context_window=400000
+					max_tokens=128000
+					input_cost=1.75
+					output_cost=14.00
+					;;
+				*gpt-5.1*|*gpt-5*codex*|*gpt-5|*gpt-5-*)
+					context_window=400000
+					max_tokens=128000
+					input_cost=1.25
+					output_cost=10.00
+					;;
+				*gpt-5*mini*)
+					context_window=400000
+					max_tokens=128000
+					input_cost=0.25
+					output_cost=2.00
+					;;
+				*gpt-5*nano*)
+					context_window=400000
+					max_tokens=128000
+					input_cost=0.05
 					output_cost=0.40
 					;;
-				*flash*|*lite*|*haiku*)
-					context_window=131072
-					max_tokens=8192
-					input_cost=0.07
-					output_cost=0.14
+				*gemini*3.1*pro*|*gemini*3*pro*)
+					context_window=1048576
+					max_tokens=65536
+					input_cost=2.00
+					output_cost=12.00
+					;;
+				*gemini*3*flash*|*gemini*2.5*flash)
+					context_window=1048576
+					max_tokens=65535
+					input_cost=0.30
+					output_cost=2.50
+					;;
+				*gemini*2.5*pro*)
+					context_window=1048576
+					max_tokens=65536
+					input_cost=1.25
+					output_cost=10.00
+					;;
+				*flash*lite*|*lite*)
+					context_window=1048576
+					max_tokens=65535
+					input_cost=0.10
+					output_cost=0.40
+					;;
+				*flash*image*|*image*)
+					context_window=65536
+					max_tokens=32768
+					input_cost=0.25
+					output_cost=1.50
 					;;
 			esac
+
 
 			models_array+=$(cat <<EOF
 {
@@ -10274,6 +10330,7 @@ EOF
 		send_stats "更新 OpenClaw..."
 		install_node_and_tools
 		npm install -g openclaw@latest
+		crontab -l 2>/dev/null | grep -v "s gateway" | crontab -
 		start_gateway
 		hash -r
 		add_app_id
