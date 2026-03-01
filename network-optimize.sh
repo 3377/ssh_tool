@@ -552,6 +552,6 @@ show_network_status() {
 #   bash network-optimize.sh
 # ========================
 
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]] || [[ -z "${BASH_SOURCE[0]}" ]]; then
     auto_optimize_network
 fi
