@@ -5848,6 +5848,7 @@ clamav() {
 }
 
 
+
 # ============================================================================
 # Linux 内核调优模块（重构版）
 # 统一核心函数 + 场景差异化参数 + 持久化到配置文件 + 硬件自适应
@@ -6198,6 +6199,7 @@ Kernel_optimize() {
 	  clear
 	  send_stats "Linux内核调优管理"
 	  local current_mode=$(grep "^# 模式:" /etc/sysctl.d/99-kejilion-optimize.conf 2>/dev/null | sed 's/# 模式: //' | awk -F'|' '{print $1}' | xargs)
+	  [ -z "$current_mode" ] && [ -f /etc/sysctl.d/99-network-optimize.conf ] && current_mode="自动调优模式"
 	  echo "Linux系统内核参数优化"
 	  if [ -n "$current_mode" ]; then
 		  echo -e "当前模式: ${gl_lv}${current_mode}${gl_bai}"
@@ -6274,6 +6276,11 @@ Kernel_optimize() {
 	  break_end
 	done
 }
+
+
+
+
+
 
 
 
