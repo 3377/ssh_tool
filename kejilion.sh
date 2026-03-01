@@ -9808,8 +9808,8 @@ moltbot_menu() {
 			# 根据模型名称推断上下文窗口（OpenRouter 2026-03 校准）
 			local context_window=1048576
 			local max_tokens=128000
-			local input_cost=1.00
-			local output_cost=6.00
+			local input_cost=0.10
+			local output_cost=0.40
 			
 			case "$model_id" in
 				*preview*|*thinking*|*opus*|*pro*|*sonnet*)
