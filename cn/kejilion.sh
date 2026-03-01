@@ -5848,12 +5848,6 @@ clamav() {
 }
 
 
-# ============================================================================
-# Linux 内核调优模块（重构版）
-# 统一核心函数 + 场景差异化参数 + 持久化到配置文件 + 硬件自适应
-# 替换原 optimize_high_performance / optimize_balanced / optimize_web_server / restore_defaults
-# ============================================================================
-
 # 获取内存大小（MB）
 _get_mem_mb() {
 	awk '/MemTotal/{printf "%d", $2/1024}' /proc/meminfo
@@ -6189,9 +6183,9 @@ Kernel_optimize() {
 	  local current_mode=$(grep "^# 模式:" /etc/sysctl.d/99-kejilion-optimize.conf 2>/dev/null | sed 's/# 模式: //' | awk -F'|' '{print $1}' | xargs)
 	  echo "Linux系统内核参数优化"
 	  if [ -n "$current_mode" ]; then
-		  echo -e "当前模式: ${gl_lv}${current_mode}${gl_bai}"
+		  echo -e "当前模式: ${gl_huang}${current_mode}${gl_bai}"
 	  else
-		  echo -e "当前模式: ${gl_hui}未优化${gl_bai}"
+		  echo -e "当前模式: ${gl_huang}未优化${gl_bai}"
 	  fi
 	  echo "视频介绍: https://www.bilibili.com/video/BV1Kb421J7yg?t=0.1"
 	  echo "------------------------------------------------"
@@ -6263,9 +6257,6 @@ Kernel_optimize() {
 	  break_end
 	done
 }
-
-
-
 
 
 
