@@ -1,5 +1,5 @@
 #!/bin/bash
-sh_v="4.4.0"
+sh_v="4.4.1"
 
 
 gl_hui='\e[37m'
@@ -61,7 +61,7 @@ CheckFirstRun_true() {
 
 # 이 기능은 함수에 묻혀있는 정보를 수집하고 사용자가 사용하는 현재 스크립트 버전 번호, 사용 시간, 시스템 버전, CPU 아키텍처, 시스템 국가 및 기능 이름을 기록합니다. 민감한 정보는 포함되어 있지 않으니 걱정하지 마세요! 저를 믿어주세요!
 # 이 기능은 왜 설계되었나요? 그 목적은 사용자가 사용하고 싶어하는 기능을 더 잘 이해하고, 기능을 더욱 최적화하고 사용자 요구에 맞는 더 많은 기능을 출시하는 것입니다.
-# send_stats 함수 호출 위치에 대한 전문을 검색할 수 있습니다. 투명하고 오픈 소스입니다. 불편하신 점이 있으시면 이용을 거부하실 수 있습니다.
+# send_stats 함수 호출 위치에 대한 전문을 검색할 수 있습니다. 투명하고 오픈 소스입니다. 우려되는 사항이 있는 경우 이용을 거부하실 수 있습니다.
 
 
 
@@ -1262,7 +1262,7 @@ check_swap() {
 
 local swap_total=$(free -m | awk 'NR==3{print $2}')
 
-# 가상 메모리를 만들어야 하는지 확인
+# 가상 메모리를 생성해야 하는지 결정
 [ "$swap_total" -gt 0 ] || add_swap 1024
 
 
@@ -2887,7 +2887,7 @@ while true; do
 			setup_docker_dir
 			check_disk_space $app_size /home/docker
 			while true; do
-				read -e -p "애플리케이션 외부 서비스 포트를 입력하고 Enter 키를 누르면 기본적으로 사용됩니다.${docker_port}포트:" app_port
+				read -e -p "애플리케이션 외부 서비스 포트를 입력하고 Enter를 누르면 기본적으로 사용됩니다.${docker_port}포트:" app_port
 				local app_port=${app_port:-${docker_port}}
 
 				if ss -tuln | grep -q ":$app_port "; then
@@ -3010,7 +3010,7 @@ docker_app_plus() {
 				check_disk_space $app_size /home/docker
 
 				while true; do
-					read -e -p "애플리케이션 외부 서비스 포트를 입력하고 Enter 키를 누르면 기본적으로 사용됩니다.${docker_port}포트:" app_port
+					read -e -p "애플리케이션 외부 서비스 포트를 입력하고 Enter를 누르면 기본적으로 사용됩니다.${docker_port}포트:" app_port
 					local app_port=${app_port:-${docker_port}}
 
 					if ss -tuln | grep -q ":$app_port "; then
@@ -3343,7 +3343,7 @@ ldnmp_web_on() {
 	  echo "당신의$webname지어졌습니다!"
 	  echo "https://$yuming"
 	  echo "------------------------"
-	  echo "$webname설치 정보는 다음과 같습니다."
+	  echo "$webname설치정보는 다음과 같습니다."
 
 }
 
@@ -3429,7 +3429,7 @@ ldnmp_Proxy() {
 	check_ip_and_get_access_port "$yuming"
 
 	if [ -z "$reverseproxy" ]; then
-		read -e -p "세대 방지 IP를 입력하십시오(기본값은 로컬 IP 127.0.0.1로 설정하려면 Enter를 누르십시오)." reverseproxy
+		read -e -p "안티 세대 IP를 입력하십시오(기본값은 로컬 IP 127.0.0.1로 설정하려면 Enter를 누르십시오)." reverseproxy
 		reverseproxy=${reverseproxy:-127.0.0.1}
 	fi
 
@@ -4335,7 +4335,7 @@ frps_panel() {
 
 			8)
 				send_stats "IP 접근 차단"
-				echo "역방향 도메인 이름 접근이 있는 경우, 이 기능을 사용하면 IP+포트 접근을 차단할 수 있어 더욱 안전합니다."
+				echo "역방향 도메인 이름 접근을 가지고 있는 경우, 이 기능을 사용하면 IP+포트 접근을 차단할 수 있어 더욱 안전합니다."
 				read -e -p "차단할 포트를 입력하세요:" frps_port
 				block_host_port "$frps_port" "$ipv4_address"
 				;;
@@ -4699,9 +4699,17 @@ linux_clean() {
 
 bbr_on() {
 
-sed -i '/net.ipv4.tcp_congestion_control=/d' /etc/sysctl.conf
-echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
-sysctl -p
+# 커널 튜닝 모듈과의 충돌을 방지하기 위해 sysctl.d에 대한 통합 쓰기
+local CONF="/etc/sysctl.d/99-kejilion-bbr.conf"
+mkdir -p /etc/sysctl.d
+echo "net.core.default_qdisc=fq" > "$CONF"
+echo "net.ipv4.tcp_congestion_control=bbr" >> "$CONF"
+
+# 충돌을 일으킬 수 있는 이전 sysctl.conf의 남은 부분을 정리합니다.
+sed -i '/net.ipv4.tcp_congestion_control/d' /etc/sysctl.conf 2>/dev/null
+sed -i '/net.core.default_qdisc/d' /etc/sysctl.conf 2>/dev/null
+
+sysctl -p "$CONF" >/dev/null 2>&1 || sysctl --system >/dev/null 2>&1
 
 }
 
@@ -4970,7 +4978,7 @@ fetch_remote_ssh_keys() {
 	# 원본 인증_키 백업
 	if [[ -f "${authorized_keys}" ]]; then
 		cp "${authorized_keys}" "${authorized_keys}.bak.$(date +%Y%m%d-%H%M%S)"
-		echo "원본 Authorized_keys 파일이 백업되었습니다."
+		echo "원래 Authorized_keys 파일이 백업되었습니다."
 	fi
 
 	# 공개 키 추가(중복 방지)
@@ -5756,7 +5764,7 @@ clamav_freshclam() {
 
 clamav_scan() {
 	if [ $# -eq 0 ]; then
-		echo "스캔할 디렉터리를 지정하세요."
+		echo "스캔할 디렉터리를 지정하십시오."
 		return
 	fi
 
@@ -5848,171 +5856,348 @@ clamav() {
 }
 
 
+# ============================================================================
+# Linux 커널 조정 모듈(리팩터링 버전)
+# 통합 핵심 기능 + 장면 차별화 매개변수 + 구성 파일 지속성 + 하드웨어 적응
+# 원래의optim_high_performance/optim_balanced/optim_web_server/restore_defaults를 교체하십시오.
+# ============================================================================
 
+# 메모리 크기(MB) 가져오기
+_get_mem_mb() {
+	awk '/MemTotal/{printf "%d", $2/1024}' /proc/meminfo
+}
 
-# 고성능 모드 최적화 기능
+# 통합 커널 튜닝 핵심 기능
+# 매개변수: $1 = 모드 이름, $2 = 장면(하이/밸런스/웹/스트림/게임)
+_kernel_optimize_core() {
+	local mode_name="$1"
+	local scene="${2:-high}"
+	local CONF="/etc/sysctl.d/99-kejilion-optimize.conf"
+	local MEM_MB=$(_get_mem_mb)
+
+	echo -e "${gl_lv}로 전환하다${mode_name}...${gl_bai}"
+
+	# ──장면에 따라 매개변수를 설정하세요──
+	local SWAPPINESS DIRTY_RATIO DIRTY_BG_RATIO OVERCOMMIT MIN_FREE_KB VFS_PRESSURE
+	local RMEM_MAX WMEM_MAX TCP_RMEM TCP_WMEM
+	local SOMAXCONN BACKLOG SYN_BACKLOG
+	local PORT_RANGE SCHED_AUTOGROUP THP NUMA FIN_TIMEOUT
+	local KEEPALIVE_TIME KEEPALIVE_INTVL KEEPALIVE_PROBES
+
+	case "$scene" in
+		high|stream|game)
+			# 고성능/생방송/게임: 급진적인 매개변수
+			SWAPPINESS=10
+			DIRTY_RATIO=15
+			DIRTY_BG_RATIO=5
+			OVERCOMMIT=1
+			VFS_PRESSURE=50
+			RMEM_MAX=67108864
+			WMEM_MAX=67108864
+			TCP_RMEM="4096 262144 67108864"
+			TCP_WMEM="4096 262144 67108864"
+			SOMAXCONN=8192
+			BACKLOG=250000
+			SYN_BACKLOG=8192
+			PORT_RANGE="1024 65535"
+			SCHED_AUTOGROUP=0
+			THP="never"
+			NUMA=0
+			FIN_TIMEOUT=10
+			KEEPALIVE_TIME=300
+			KEEPALIVE_INTVL=30
+			KEEPALIVE_PROBES=5
+			;;
+		web)
+			# 웹사이트 서버: 높은 동시성 우선순위
+			SWAPPINESS=10
+			DIRTY_RATIO=20
+			DIRTY_BG_RATIO=10
+			OVERCOMMIT=1
+			VFS_PRESSURE=50
+			RMEM_MAX=33554432
+			WMEM_MAX=33554432
+			TCP_RMEM="4096 131072 33554432"
+			TCP_WMEM="4096 131072 33554432"
+			SOMAXCONN=16384
+			BACKLOG=10000
+			SYN_BACKLOG=16384
+			PORT_RANGE="1024 65535"
+			SCHED_AUTOGROUP=0
+			THP="never"
+			NUMA=0
+			FIN_TIMEOUT=15
+			KEEPALIVE_TIME=600
+			KEEPALIVE_INTVL=60
+			KEEPALIVE_PROBES=5
+			;;
+		balanced)
+			# 균형 모드: 보통 최적화
+			SWAPPINESS=30
+			DIRTY_RATIO=20
+			DIRTY_BG_RATIO=10
+			OVERCOMMIT=0
+			VFS_PRESSURE=75
+			RMEM_MAX=16777216
+			WMEM_MAX=16777216
+			TCP_RMEM="4096 87380 16777216"
+			TCP_WMEM="4096 65536 16777216"
+			SOMAXCONN=4096
+			BACKLOG=5000
+			SYN_BACKLOG=4096
+			PORT_RANGE="1024 49151"
+			SCHED_AUTOGROUP=1
+			THP="always"
+			NUMA=1
+			FIN_TIMEOUT=30
+			KEEPALIVE_TIME=600
+			KEEPALIVE_INTVL=60
+			KEEPALIVE_PROBES=5
+			;;
+	esac
+
+	# ── 메모리 크기에 따라 적응적으로 조정 ──
+	if [ "$MEM_MB" -ge 16384 ]; then
+		MIN_FREE_KB=131072
+		[ "$scene" != "balanced" ] && SWAPPINESS=5
+	elif [ "$MEM_MB" -ge 4096 ]; then
+		MIN_FREE_KB=65536
+	elif [ "$MEM_MB" -ge 1024 ]; then
+		MIN_FREE_KB=32768
+		# 작은 메모리 축소 버퍼
+		if [ "$scene" != "balanced" ]; then
+			RMEM_MAX=16777216
+			WMEM_MAX=16777216
+			TCP_RMEM="4096 87380 16777216"
+			TCP_WMEM="4096 65536 16777216"
+		fi
+	else
+		MIN_FREE_KB=16384
+		SWAPPINESS=30
+		OVERCOMMIT=0
+		RMEM_MAX=4194304
+		WMEM_MAX=4194304
+		TCP_RMEM="4096 32768 4194304"
+		TCP_WMEM="4096 32768 4194304"
+		SOMAXCONN=1024
+		BACKLOG=1000
+	fi
+
+	# ── 추가 라이브 방송 시나리오: UDP 버퍼 확대 ──
+	local STREAM_EXTRA=""
+	if [ "$scene" = "stream" ]; then
+		STREAM_EXTRA="
+# 라이브 스트리밍 UDP 최적화
+net.ipv4.udp_rmem_min = 16384
+net.ipv4.udp_wmem_min = 16384
+net.ipv4.tcp_notsent_lowat = 16384"
+	fi
+
+	# ── 게임 서버 장면 추가: 낮은 대기 시간 우선 ──
+	local GAME_EXTRA=""
+	if [ "$scene" = "game" ]; then
+		GAME_EXTRA="
+# 게임 서버 낮은 대기 시간 최적화
+net.ipv4.udp_rmem_min = 16384
+net.ipv4.udp_wmem_min = 16384
+net.ipv4.tcp_notsent_lowat = 16384
+net.ipv4.tcp_slow_start_after_idle = 0"
+	fi
+
+	# ── BBR 모듈 로드 ──
+	local CC="bbr"
+	local QDISC="fq"
+	local KVER
+	KVER=$(uname -r | grep -oP '^\d+\.\d+')
+	if printf '%s\n%s' "4.9" "$KVER" | sort -V -C; then
+		if ! lsmod 2>/dev/null | grep -q tcp_bbr; then
+			modprobe tcp_bbr 2>/dev/null
+		fi
+		if ! sysctl net.ipv4.tcp_available_congestion_control 2>/dev/null | grep -q bbr; then
+			CC="cubic"
+			QDISC="fq_codel"
+		fi
+	else
+		CC="cubic"
+		QDISC="fq_codel"
+	fi
+
+	# ── 기존 구성 백업 ──
+	[ -f "$CONF" ] && cp "$CONF" "${CONF}.bak.$(date +%s)"
+
+	# ── 구성 파일 쓰기(지속성) ──
+	echo -e "${gl_lv}최적화 구성 쓰기...${gl_bai}"
+	cat > "$CONF" << SYSCTL
+# 케질리온 커널 튜닝 구성
+# 모드: $mode_name | 장면: $장면
+# 메모리: ${MEM_MB}MB | 생성 시간: $(날짜 '+%Y-%m-%d %H:%M:%S')
+
+# ──TCP 혼잡 제어──
+net.core.default_qdisc = $QDISC
+net.ipv4.tcp_congestion_control = $CC
+
+# ── TCP 버퍼 ──
+net.core.rmem_max = $RMEM_MAX
+net.core.wmem_max = $WMEM_MAX
+net.core.rmem_default = $(echo "$TCP_RMEM" | awk '{print $2}')
+net.core.wmem_default = $(echo "$TCP_WMEM" | awk '{print $2}')
+net.ipv4.tcp_rmem = $TCP_RMEM
+net.ipv4.tcp_wmem = $TCP_WMEM
+
+# ── 연결 큐 ──
+net.core.somaxconn = $SOMAXCONN
+net.core.netdev_max_backlog = $BACKLOG
+net.ipv4.tcp_max_syn_backlog = $SYN_BACKLOG
+
+# ── TCP 연결 최적화 ──
+net.ipv4.tcp_fastopen = 3
+net.ipv4.tcp_tw_reuse = 1
+net.ipv4.tcp_fin_timeout = $FIN_TIMEOUT
+net.ipv4.tcp_keepalive_time = $KEEPALIVE_TIME
+net.ipv4.tcp_keepalive_intvl = $KEEPALIVE_INTVL
+net.ipv4.tcp_keepalive_probes = $KEEPALIVE_PROBES
+net.ipv4.tcp_max_tw_buckets = 65536
+net.ipv4.tcp_syncookies = 1
+net.ipv4.tcp_synack_retries = 2
+net.ipv4.tcp_syn_retries = 3
+net.ipv4.tcp_mtu_probing = 1
+net.ipv4.tcp_sack = 1
+net.ipv4.tcp_timestamps = 1
+net.ipv4.tcp_window_scaling = 1
+
+# ── 포트와 메모리 ──
+net.ipv4.ip_local_port_range = $PORT_RANGE
+net.ipv4.tcp_mem = $((MEM_MB * 1024 / 8)) $((MEM_MB * 1024 / 4)) $((MEM_MB * 1024 / 2))
+net.ipv4.tcp_max_orphans = 32768
+
+# ── 가상 메모리 ──
+vm.swappiness = $SWAPPINESS
+vm.dirty_ratio = $DIRTY_RATIO
+vm.dirty_background_ratio = $DIRTY_BG_RATIO
+vm.overcommit_memory = $OVERCOMMIT
+vm.min_free_kbytes = $MIN_FREE_KB
+vm.vfs_cache_pressure = $VFS_PRESSURE
+
+# ──CPU/커널 스케줄링──
+kernel.sched_autogroup_enabled = $SCHED_AUTOGROUP
+$([ -f /proc/sys/kernel/numa_balancing ] && echo "kernel.numa_balancing = $NUMA" || echo "# numa_balancing은 지원되지 않습니다")
+
+# ──안전 보호──
+net.ipv4.conf.all.rp_filter = 1
+net.ipv4.conf.default.rp_filter = 1
+net.ipv4.icmp_echo_ignore_broadcasts = 1
+net.ipv4.icmp_ignore_bogus_error_responses = 1
+net.ipv4.conf.all.accept_redirects = 0
+net.ipv4.conf.default.accept_redirects = 0
+net.ipv4.conf.all.send_redirects = 0
+net.ipv4.conf.default.send_redirects = 0
+net.ipv6.conf.all.accept_redirects = 0
+net.ipv6.conf.default.accept_redirects = 0
+
+# ── 파일 설명자 ──
+fs.file-max = 1048576
+fs.nr_open = 1048576
+
+# ── 연결 추적 ──
+$(if [ -f /proc/sys/net/netfilter/nf_conntrack_max ]; then
+echo "net.netfilter.nf_conntrack_max = $((SOMAXCONN * 32))"
+echo "net.netfilter.nf_conntrack_tcp_timeout_established = 7200"
+echo "net.netfilter.nf_conntrack_tcp_timeout_time_wait = 30"
+echo "net.netfilter.nf_conntrack_tcp_timeout_close_wait = 15"
+echo "net.netfilter.nf_conntrack_tcp_timeout_fin_wait = 15"
+else
+echo "# conntrack이 활성화되어 있지 않습니다"
+fi)
+$STREAM_EXTRA
+$GAME_EXTRA
+SYSCTL
+
+	# ── 구성 적용(한 줄씩, 지원되지 않는 매개변수 건너뛰기) ──
+	echo -e "${gl_lv}최적화 매개변수 적용...${gl_bai}"
+	local applied=0 skipped=0
+	while IFS= read -r line; do
+		# 주석과 빈 줄 건너뛰기
+		[[ "$line" =~ ^[[:space:]]*# ]] && continue
+		[[ -z "${line// /}" ]] && continue
+		if sysctl -w "$line" >/dev/null 2>&1; then
+			applied=$((applied + 1))
+		else
+			skipped=$((skipped + 1))
+		fi
+	done < "$CONF"
+	echo -e "${gl_lv}적용된${applied}항목 매개변수 ${skipped:+, 건너뛰기${skipped}지원되지 않는 항목 매개변수}${gl_bai}"
+
+	# ── 투명 대형 페이지 ──
+	if [ -f /sys/kernel/mm/transparent_hugepage/enabled ]; then
+		echo "$THP" > /sys/kernel/mm/transparent_hugepage/enabled 2>/dev/null
+	fi
+
+	# ── 파일 설명자 제한 사항 ──
+	if ! grep -q "# kejilion-optimize" /etc/security/limits.conf 2>/dev/null; then
+		cat >> /etc/security/limits.conf << 'LIMITS'
+
+# kejilion-optimize
+* soft nofile 1048576
+* hard nofile 1048576
+root soft nofile 1048576
+root hard nofile 1048576
+LIMITS
+	fi
+
+	# ── BBR 지속성 ──
+	if [ "$CC" = "bbr" ]; then
+		echo "tcp_bbr" > /etc/modules-load.d/bbr.conf 2>/dev/null
+		# 이전 sysctl.conf에서 bbr 구성을 정리합니다(충돌을 방지하기 위해).
+		sed -i '/net.ipv4.tcp_congestion_control/d' /etc/sysctl.conf 2>/dev/null
+	fi
+
+	echo -e "${gl_lv}${mode_name}최적화 완료! 구성은 다음과 같이 유지되었습니다.${CONF}${gl_bai}"
+	echo -e "${gl_lv}메모리:${MEM_MB}MB | 혼잡 알고리즘:${CC}| 대기줄:${QDISC}${gl_bai}"
+}
+
+# ── 각 모드의 진입 기능(원래 호출 인터페이스를 그대로 유지) ──
+
 optimize_high_performance() {
-	echo -e "${gl_lv}로 전환하다${tiaoyou_moshi}...${gl_bai}"
-
-	echo -e "${gl_lv}파일 설명자 최적화...${gl_bai}"
-	ulimit -n 65535
-
-	echo -e "${gl_lv}가상 메모리 최적화...${gl_bai}"
-	sysctl -w vm.swappiness=10 2>/dev/null
-	sysctl -w vm.dirty_ratio=15 2>/dev/null
-	sysctl -w vm.dirty_background_ratio=5 2>/dev/null
-	sysctl -w vm.overcommit_memory=1 2>/dev/null
-	sysctl -w vm.min_free_kbytes=65536 2>/dev/null
-
-	echo -e "${gl_lv}네트워크 설정 최적화...${gl_bai}"
-	sysctl -w net.core.rmem_max=16777216 2>/dev/null
-	sysctl -w net.core.wmem_max=16777216 2>/dev/null
-	sysctl -w net.core.netdev_max_backlog=250000 2>/dev/null
-	sysctl -w net.core.somaxconn=4096 2>/dev/null
-	sysctl -w net.ipv4.tcp_rmem='4096 87380 16777216' 2>/dev/null
-	sysctl -w net.ipv4.tcp_wmem='4096 65536 16777216' 2>/dev/null
-	sysctl -w net.ipv4.tcp_congestion_control=bbr 2>/dev/null
-	sysctl -w net.ipv4.tcp_max_syn_backlog=8192 2>/dev/null
-	sysctl -w net.ipv4.tcp_tw_reuse=1 2>/dev/null
-	sysctl -w net.ipv4.ip_local_port_range='1024 65535' 2>/dev/null
-
-	echo -e "${gl_lv}캐시 관리 최적화...${gl_bai}"
-	sysctl -w vm.vfs_cache_pressure=50 2>/dev/null
-
-	echo -e "${gl_lv}CPU 설정 최적화...${gl_bai}"
-	sysctl -w kernel.sched_autogroup_enabled=0 2>/dev/null
-
-	echo -e "${gl_lv}기타 최적화...${gl_bai}"
-	# 대기 시간을 줄이기 위해 투명한 대용량 페이지를 비활성화합니다.
-	echo never > /sys/kernel/mm/transparent_hugepage/enabled
-	# NUMA 밸런싱 비활성화
-	sysctl -w kernel.numa_balancing=0 2>/dev/null
-
-
+	_kernel_optimize_core "${tiaoyou_moshi:-高性能优化模式}" "high"
 }
 
-# 균형 모드 최적화 기능
 optimize_balanced() {
-	echo -e "${gl_lv}이퀄라이제이션 모드로 전환...${gl_bai}"
-
-	echo -e "${gl_lv}파일 설명자 최적화...${gl_bai}"
-	ulimit -n 32768
-
-	echo -e "${gl_lv}가상 메모리 최적화...${gl_bai}"
-	sysctl -w vm.swappiness=30 2>/dev/null
-	sysctl -w vm.dirty_ratio=20 2>/dev/null
-	sysctl -w vm.dirty_background_ratio=10 2>/dev/null
-	sysctl -w vm.overcommit_memory=0 2>/dev/null
-	sysctl -w vm.min_free_kbytes=32768 2>/dev/null
-
-	echo -e "${gl_lv}네트워크 설정 최적화...${gl_bai}"
-	sysctl -w net.core.rmem_max=8388608 2>/dev/null
-	sysctl -w net.core.wmem_max=8388608 2>/dev/null
-	sysctl -w net.core.netdev_max_backlog=125000 2>/dev/null
-	sysctl -w net.core.somaxconn=2048 2>/dev/null
-	sysctl -w net.ipv4.tcp_rmem='4096 87380 8388608' 2>/dev/null
-	sysctl -w net.ipv4.tcp_wmem='4096 32768 8388608' 2>/dev/null
-	sysctl -w net.ipv4.tcp_congestion_control=bbr 2>/dev/null
-	sysctl -w net.ipv4.tcp_max_syn_backlog=4096 2>/dev/null
-	sysctl -w net.ipv4.tcp_tw_reuse=1 2>/dev/null
-	sysctl -w net.ipv4.ip_local_port_range='1024 49151' 2>/dev/null
-
-	echo -e "${gl_lv}캐시 관리 최적화...${gl_bai}"
-	sysctl -w vm.vfs_cache_pressure=75 2>/dev/null
-
-	echo -e "${gl_lv}CPU 설정 최적화...${gl_bai}"
-	sysctl -w kernel.sched_autogroup_enabled=1 2>/dev/null
-
-	echo -e "${gl_lv}기타 최적화...${gl_bai}"
-	# 투명한 대용량 페이지 복원
-	echo always > /sys/kernel/mm/transparent_hugepage/enabled
-	# NUMA 밸런싱 복원
-	sysctl -w kernel.numa_balancing=1 2>/dev/null
-
-
+	_kernel_optimize_core "균형 잡힌 최적화 모드" "balanced"
 }
 
-# 기본 설정 복원 기능
+optimize_web_server() {
+	_kernel_optimize_core "웹사이트 구축 최적화 모드" "web"
+}
+
+# ── 기본 설정 복원(완전 청소) ──
 restore_defaults() {
 	echo -e "${gl_lv}기본 설정으로 되돌리기...${gl_bai}"
 
-	echo -e "${gl_lv}파일 설명자를 복원합니다...${gl_bai}"
-	ulimit -n 1024
+	local CONF="/etc/sysctl.d/99-kejilion-optimize.conf"
 
-	echo -e "${gl_lv}가상 메모리 복원...${gl_bai}"
-	sysctl -w vm.swappiness=60 2>/dev/null
-	sysctl -w vm.dirty_ratio=20 2>/dev/null
-	sysctl -w vm.dirty_background_ratio=10 2>/dev/null
-	sysctl -w vm.overcommit_memory=0 2>/dev/null
-	sysctl -w vm.min_free_kbytes=16384 2>/dev/null
+	# 최적화 구성 파일 삭제(외부 링크 자동 튜닝 구성 포함)
+	rm -f "$CONF"
+	rm -f /etc/sysctl.d/99-network-optimize.conf
 
-	echo -e "${gl_lv}네트워크 설정 재설정...${gl_bai}"
-	sysctl -w net.core.rmem_max=212992 2>/dev/null
-	sysctl -w net.core.wmem_max=212992 2>/dev/null
-	sysctl -w net.core.netdev_max_backlog=1000 2>/dev/null
-	sysctl -w net.core.somaxconn=128 2>/dev/null
-	sysctl -w net.ipv4.tcp_rmem='4096 87380 6291456' 2>/dev/null
-	sysctl -w net.ipv4.tcp_wmem='4096 16384 4194304' 2>/dev/null
-	sysctl -w net.ipv4.tcp_congestion_control=cubic 2>/dev/null
-	sysctl -w net.ipv4.tcp_max_syn_backlog=2048 2>/dev/null
-	sysctl -w net.ipv4.tcp_tw_reuse=0 2>/dev/null
-	sysctl -w net.ipv4.ip_local_port_range='32768 60999' 2>/dev/null
+	# sysctl.conf에서 가능한 나머지 bbr 구성을 정리합니다.
+	sed -i '/net.ipv4.tcp_congestion_control/d' /etc/sysctl.conf 2>/dev/null
 
-	echo -e "${gl_lv}캐시 관리 복원...${gl_bai}"
-	sysctl -w vm.vfs_cache_pressure=100 2>/dev/null
+	# 시스템 기본 구성 다시 로드
+	sysctl --system 2>/dev/null | tail -1
 
-	echo -e "${gl_lv}CPU 설정 복원...${gl_bai}"
-	sysctl -w kernel.sched_autogroup_enabled=1 2>/dev/null
-
-	echo -e "${gl_lv}다른 최적화 되돌리기...${gl_bai}"
 	# 투명한 대용량 페이지 복원
-	echo always > /sys/kernel/mm/transparent_hugepage/enabled
-	# NUMA 밸런싱 복원
-	sysctl -w kernel.numa_balancing=1 2>/dev/null
+	[ -f /sys/kernel/mm/transparent_hugepage/enabled ] && \
+		echo always > /sys/kernel/mm/transparent_hugepage/enabled 2>/dev/null
 
-}
+	# 파일 설명자 구성 정리
+	if grep -q "# kejilion-optimize" /etc/security/limits.conf 2>/dev/null; then
+		sed -i '/# kejilion-optimize/,+4d' /etc/security/limits.conf
+	fi
 
+	# BBR 지속성 정리
+	rm -f /etc/modules-load.d/bbr.conf 2>/dev/null
 
-
-# 웹사이트 구축 최적화 기능
-optimize_web_server() {
-	echo -e "${gl_lv}웹사이트 구축 최적화 모드로 전환...${gl_bai}"
-
-	echo -e "${gl_lv}파일 설명자 최적화...${gl_bai}"
-	ulimit -n 65535
-
-	echo -e "${gl_lv}가상 메모리 최적화...${gl_bai}"
-	sysctl -w vm.swappiness=10 2>/dev/null
-	sysctl -w vm.dirty_ratio=20 2>/dev/null
-	sysctl -w vm.dirty_background_ratio=10 2>/dev/null
-	sysctl -w vm.overcommit_memory=1 2>/dev/null
-	sysctl -w vm.min_free_kbytes=65536 2>/dev/null
-
-	echo -e "${gl_lv}네트워크 설정 최적화...${gl_bai}"
-	sysctl -w net.core.rmem_max=16777216 2>/dev/null
-	sysctl -w net.core.wmem_max=16777216 2>/dev/null
-	sysctl -w net.core.netdev_max_backlog=5000 2>/dev/null
-	sysctl -w net.core.somaxconn=4096 2>/dev/null
-	sysctl -w net.ipv4.tcp_rmem='4096 87380 16777216' 2>/dev/null
-	sysctl -w net.ipv4.tcp_wmem='4096 65536 16777216' 2>/dev/null
-	sysctl -w net.ipv4.tcp_congestion_control=bbr 2>/dev/null
-	sysctl -w net.ipv4.tcp_max_syn_backlog=8192 2>/dev/null
-	sysctl -w net.ipv4.tcp_tw_reuse=1 2>/dev/null
-	sysctl -w net.ipv4.ip_local_port_range='1024 65535' 2>/dev/null
-
-	echo -e "${gl_lv}캐시 관리 최적화...${gl_bai}"
-	sysctl -w vm.vfs_cache_pressure=50 2>/dev/null
-
-	echo -e "${gl_lv}CPU 설정 최적화...${gl_bai}"
-	sysctl -w kernel.sched_autogroup_enabled=0 2>/dev/null
-
-	echo -e "${gl_lv}기타 최적화...${gl_bai}"
-	# 대기 시간을 줄이기 위해 투명한 대용량 페이지를 비활성화합니다.
-	echo never > /sys/kernel/mm/transparent_hugepage/enabled
-	# NUMA 밸런싱 비활성화
-	sysctl -w kernel.numa_balancing=0 2>/dev/null
-
-
+	echo -e "${gl_lv}시스템이 기본 설정으로 복원되었습니다.${gl_bai}"
 }
 
 
@@ -6021,18 +6206,26 @@ Kernel_optimize() {
 	while true; do
 	  clear
 	  send_stats "Linux 커널 튜닝 관리"
+	  local current_mode=$(grep "^# 모드:" /etc/sysctl.d/99-kejilion-optimize.conf 2>/dev/null | sed 's/# 모드: //' | awk -F'|' '{print $1}' | xargs)
+	  [ -z "$current_mode" ] && [ -f /etc/sysctl.d/99-network-optimize.conf ] && current_mode="자동 튜닝 모드"
 	  echo "Linux 시스템 커널 매개변수 최적화"
+	  if [ -n "$current_mode" ]; then
+		  echo -e "현재 모드:${gl_lv}${current_mode}${gl_bai}"
+	  else
+		  echo -e "현재 모드:${gl_hui}최적화되지 않음${gl_bai}"
+	  fi
 	  echo "영상 소개: https://www.bilibili.com/video/BV1Kb421J7yg?t=0.1"
 	  echo "------------------------------------------------"
 	  echo "다양한 시스템 매개변수 조정 모드를 제공하며 사용자는 자신의 사용 시나리오에 따라 전환하도록 선택할 수 있습니다."
 	  echo -e "${gl_huang}힌트:${gl_bai}프로덕션 환경에서는 주의해서 사용해주세요!"
-	  echo "--------------------"
-	  echo "1. 고성능 최적화 모드: 시스템 성능을 최대화하고 파일 설명자, 가상 메모리, 네트워크 설정, 캐시 관리 및 CPU 설정을 최적화합니다."
-	  echo "2. 균형 잡힌 최적화 모드: 일상적인 사용에 적합한 성능과 리소스 소비 사이의 균형을 유지합니다."
-	  echo "3. 웹사이트 최적화 모드: 웹사이트 서버를 최적화하여 동시 연결 처리 기능, 응답 속도 및 전반적인 성능을 향상시킵니다."
-	  echo "4. 라이브 방송 최적화 모드: 라이브 스트리밍의 특별한 요구 사항을 최적화하여 지연을 줄이고 전송 성능을 향상시킵니다."
-	  echo "5. 게임 서버 최적화 모드: 게임 서버를 최적화하여 동시 처리 기능과 응답 속도를 향상시킵니다."
-	  echo "6. 기본 설정 복원: 시스템 설정을 기본 구성으로 복원합니다."
+	  echo -e "--------------------"
+	  echo -e "1. 고성능 최적화 모드: 시스템 성능, 적극적인 메모리 및 네트워크 매개변수를 최대화합니다."
+	  echo -e "2. 균형 잡힌 최적화 모드: 일상적인 사용에 적합한 성능과 리소스 소비 사이의 균형을 유지합니다."
+	  echo -e "3. 웹사이트 최적화 모드: 웹사이트 서버에 최적화되어 있으며 동시 연결 대기열이 매우 높습니다."
+	  echo -e "4. 라이브 방송 최적화 모드: 라이브 스트리밍 최적화를 위해 UDP 버퍼가 확장되어 지연이 줄어듭니다."
+	  echo -e "5. 게임 서버 최적화 모드: 게임 서버에 최적화되어 낮은 대기 시간을 우선시합니다."
+	  echo -e "6. 기본 설정 복원: 시스템 설정을 기본 구성으로 복원합니다."
+	  echo -e "7. 자동 튜닝: 테스트 데이터를 기반으로 커널 매개변수를 자동으로 튜닝합니다.${gl_huang}★${gl_bai}"
 	  echo "--------------------"
 	  echo "0. 이전 메뉴로 돌아가기"
 	  echo "--------------------"
@@ -6055,28 +6248,35 @@ Kernel_optimize() {
 			  cd ~
 			  clear
 			  optimize_web_server
-			  send_stats "웹사이트 최적화 모드"
+			  send_stats "웹사이트 최적화 모델"
 			  ;;
 		  4)
 			  cd ~
 			  clear
-			  local tiaoyou_moshi="라이브 방송 최적화 모드"
-			  optimize_high_performance
+			  _kernel_optimize_core "라이브 방송 최적화 모드" "stream"
 			  send_stats "라이브 스트리밍 최적화"
 			  ;;
 		  5)
 			  cd ~
 			  clear
-			  local tiaoyou_moshi="게임 서버 최적화 모드"
-			  optimize_high_performance
+			  _kernel_optimize_core "게임 서버 최적화 모드" "game"
 			  send_stats "게임 서버 최적화"
 			  ;;
 		  6)
 			  cd ~
 			  clear
 			  restore_defaults
+			  curl -sS ${gh_proxy}raw.githubusercontent.com/kejilion/sh/refs/heads/main/network-optimize.sh -o /tmp/network-optimize.sh && source /tmp/network-optimize.sh && restore_network_defaults
 			  send_stats "기본 설정 복원"
 			  ;;
+
+		  7)
+			  cd ~
+			  clear
+			  curl -sS ${gh_proxy}raw.githubusercontent.com/kejilion/sh/refs/heads/main/network-optimize.sh | bash
+			  send_stats "커널 자동 튜닝"
+			  ;;
+
 		  *)
 			  break
 			  ;;
@@ -6084,6 +6284,8 @@ Kernel_optimize() {
 	  break_end
 	done
 }
+
+
 
 
 
@@ -6262,7 +6464,7 @@ linux_trash() {
 
 	clear
 	echo -e "현재 휴지통${trash_status}"
-	echo -e "활성화한 후에는 중요한 파일이 실수로 삭제되는 것을 방지하기 위해 rm으로 삭제된 파일이 먼저 휴지통에 들어갑니다!"
+	echo -e "활성화한 후에는 중요한 파일이 실수로 삭제되는 것을 방지하기 위해 rm으로 삭제된 파일이 먼저 휴지통에 저장됩니다!"
 	echo "------------------------------------------------"
 	ls -l --color=auto "$TRASH_DIR" 2>/dev/null || echo "휴지통이 비어 있습니다."
 	echo "------------------------"
@@ -6505,7 +6707,7 @@ add_connection() {
 				if [[ -z "$line" && "$password_or_key" == *"-----BEGIN"* ]]; then
 					break
 				fi
-				# 첫 번째 줄이거나 이미 핵심 내용 입력을 시작했다면 계속해서 추가하세요.
+				# 첫 번째 줄이거나 이미 핵심 내용을 입력하기 시작했다면 계속해서 추가하세요.
 				if [[ -n "$line" || "$password_or_key" == *"-----BEGIN"* ]]; then
 					local password_or_key+="${line}"$'\n'
 				fi
@@ -6811,7 +7013,7 @@ disk_manager() {
 	send_stats "하드디스크 관리 기능"
 	while true; do
 		clear
-		echo "하드 드라이브 파티션 관리"
+		echo "하드 디스크 파티션 관리"
 		echo -e "${gl_huang}이 기능은 내부 테스트 중이므로 프로덕션 환경에서는 사용하면 안 됩니다.${gl_bai}"
 		echo "------------------------"
 		list_partitions
@@ -6881,7 +7083,7 @@ add_task() {
 				if [[ -z "$line" && "$password_or_key" == *"-----BEGIN"* ]]; then
 					break
 				fi
-				# 첫 번째 줄이거나 이미 핵심 내용 입력을 시작했다면 계속해서 추가하세요.
+				# 첫 번째 줄이거나 이미 핵심 내용을 입력하기 시작했다면 계속해서 추가하세요.
 				if [[ -n "$line" || "$password_or_key" == *"-----BEGIN"* ]]; then
 					password_or_key+="${line}"$'\n'
 				fi
@@ -7018,7 +7220,7 @@ run_task() {
 	else
 		echo "동기화에 실패했습니다! 다음 사항을 확인하세요."
 		echo "1. 네트워크 연결이 정상인가요?"
-		echo "2. 원격 호스트에 접근 가능한지 여부"
+		echo "2. 원격 호스트에 접근할 수 있나요?"
 		echo "3. 인증정보가 정확합니까?"
 		echo "4. 로컬 및 원격 디렉터리에 올바른 액세스 권한이 있습니까?"
 	fi
@@ -7629,7 +7831,7 @@ docker_ssh_migration() {
 
 		echo -e "${gl_kjlan}Docker 컨테이너 백업 중...${gl_bai}"
 		docker ps --format '{{.Names}}'
-		read -e -p  "백업할 컨테이너의 이름을 입력하십시오(여러 개의 공백을 구분하고 Enter를 눌러 실행 중인 모든 컨테이너를 백업하십시오)." containers
+		read -e -p  "백업할 컨테이너의 이름을 입력하십시오(실행 중인 모든 컨테이너를 백업하려면 여러 개의 공백을 구분하고 Enter 키를 누르십시오)." containers
 
 		install tar jq gzip
 		install_docker
@@ -7870,7 +8072,7 @@ docker_ssh_migration() {
 
 		echo -e "${gl_huang}백업 전송 중...${gl_bai}"
 		if [[ -z "$TARGET_PASS" ]]; then
-			# 키를 사용하여 로그인
+			# 키로 로그인
 			scp -P "$TARGET_PORT" -o StrictHostKeyChecking=no -r "$LATEST_TAR" "$TARGET_USER@$TARGET_IP:/tmp/"
 		fi
 
@@ -7903,7 +8105,7 @@ docker_ssh_migration() {
 			echo -e "1. 도커 프로젝트 백업"
 			echo -e "2. 도커 프로젝트 마이그레이션"
 			echo -e "3. 도커 프로젝트 복원"
-			echo -e "4. docker 프로젝트 백업 파일 삭제"
+			echo -e "4. Docker 프로젝트의 백업 파일을 삭제합니다."
 			echo "------------------------"
 			echo -e "0. 이전 메뉴로 돌아가기"
 			echo "------------------------"
@@ -8057,7 +8259,7 @@ linux_docker() {
 					  3)
 						  send_stats "네트워크에 가입하세요"
 						  read -e -p "종료 네트워크 이름:" dockernetwork
-						  read -e -p "해당 컨테이너는 네트워크를 종료합니다(여러 컨테이너 이름을 공백으로 구분하세요)." dockernames
+						  read -e -p "이러한 컨테이너는 네트워크를 종료합니다(여러 컨테이너 이름을 공백으로 구분하세요)." dockernames
 
 						  for dockername in $dockernames; do
 							  docker network disconnect $dockernetwork $dockername
@@ -8418,7 +8620,7 @@ linux_Oracle() {
 		  1)
 			  clear
 			  echo "활성 스크립트: CPU 사용량 10-20% 메모리 사용량 20%"
-			  read -e -p "설치하시겠습니까? (예/아니요):" choice
+			  read -e -p "정말로 설치하시겠습니까? (예/아니요):" choice
 			  case "$choice" in
 				[Yy])
 
@@ -9153,7 +9355,7 @@ linux_ldnmp() {
 	  echo "배포 시작$webname"
 	  add_yuming
 	  echo -e "도메인 이름 형식:${gl_huang}google.com${gl_bai}"
-	  read -e -p "역방향 프록시 도메인 이름을 입력하세요." fandai_yuming
+	  read -e -p "역방향 프록시 도메인 이름을 입력하세요:" fandai_yuming
 	  nginx_install_status
 
 	  install_ssltls
@@ -9740,8 +9942,8 @@ moltbot_menu() {
 
 
 	start_bot() {
-		echo "OpenClaw를 시작하는 중..."
-		send_stats "OpenClaw를 시작하는 중..."
+		echo "OpenClaw를 시작하세요..."
+		send_stats "OpenClaw를 시작하세요..."
 		start_gateway
 		break_end
 	}
@@ -9805,30 +10007,26 @@ moltbot_menu() {
 			[[ $first == false ]] && models_array+=","
 			first=false
 
-			# 모델명을 기준으로 컨텍스트 창 추론
-			local context_window=131072
-			local max_tokens=8192
-			local input_cost=0.14
-			local output_cost=0.28
+			# context 및 max_tokens가 완전히 로드되었으므로 큰 문제를 두려워하지 않습니다.
+			local context_window=1048576
+			local max_tokens=128000
+
+			# 가격만 등급을 매겨야 합니다.
+			local input_cost=0.15
+			local output_cost=0.60
 
 			case "$model_id" in
-				*preview*|*thinking*|*opus*|*pro*)
-					context_window=1048576  # 1M
-					max_tokens=16384
-					input_cost=0.30
-					output_cost=0.60
+				*opus*|*pro*|*preview*|*thinking*|*sonnet*)
+					input_cost=2.00
+					output_cost=12.00
 					;;
 				*gpt-5*|*codex*)
-					context_window=131072   # 128K
-					max_tokens=8192
-					input_cost=0.20
-					output_cost=0.40
+					input_cost=1.25
+					output_cost=10.00
 					;;
-				*flash*|*lite*|*haiku*)
-					context_window=131072
-					max_tokens=8192
-					input_cost=0.07
-					output_cost=0.14
+				*flash*|*lite*|*haiku*|*mini*|*nano*)
+					input_cost=0.10
+					output_cost=0.40
 					;;
 			esac
 
@@ -10035,7 +10233,7 @@ EOF
 			echo "----------------------------------------"
 
 			# 사용자가 복사할 수 있는 권장 실무 플러그인 목록 출력
-			echo "추천 실용 플러그인(이름 입력을 직접 복사할 수 있음):"
+			echo "추천 실용 플러그인(이름을 직접 복사하여 입력 가능):"
 			echo "feishu # Feishu/Lark 통합 (현재 로드됨 ✓)"
 			echo "텔레그램 # 텔레그램 봇 통합 (현재 로드됨 ✓)"
 			echo "memory-core # 핵심 메모리 강화: 파일 기반 상황별 검색(현재 로드됨 ✓)"
@@ -10164,7 +10362,7 @@ EOF
 						openclaw plugins enable "$plugin_id"
 					else
 						echo "❌ 치명적인 오류: 플러그인을 얻을 수 없습니다. ID가 맞는지, 네트워크 사용이 가능한지 확인해주세요."
-						# 키: 구성 하드 코딩을 방지하려면 아래 start_gateway를 사용하는 대신 여기로 직접 돌아가거나 계속하세요.
+						# 키: 구성이 하드 코딩되는 것을 방지하려면 아래 start_gateway를 사용하는 대신 여기로 직접 돌아가거나 계속하세요.
 						break_end
 						continue
 					fi
@@ -10274,6 +10472,7 @@ EOF
 		send_stats "오픈클로 업데이트..."
 		install_node_and_tools
 		npm install -g openclaw@latest
+		crontab -l 2>/dev/null | grep -v "s gateway" | crontab -
 		start_gateway
 		hash -r
 		add_app_id
@@ -10446,7 +10645,7 @@ EOF
 				openclaw onboard --install-daemon
 				break_end
 				;;
-			12) send_stats "상태 감지 및 수리"
+			12) send_stats "상태 감지 및 복구"
 				openclaw doctor --fix
 				break_end
 			 	;;
@@ -10498,7 +10697,7 @@ while true; do
 
 	  echo -e "${gl_kjlan}1.   ${color1}파고다 패널 공식 버전${gl_kjlan}2.   ${color2}aaPanel Pagoda 국제 버전"
 	  echo -e "${gl_kjlan}3.   ${color3}1패널 차세대 관리 패널${gl_kjlan}4.   ${color4}NginxProxyManager 시각화 패널"
-	  echo -e "${gl_kjlan}5.   ${color5}OpenList 다중 저장소 파일 목록 프로그램${gl_kjlan}6.   ${color6}Ubuntu 원격 데스크톱 웹 에디션"
+	  echo -e "${gl_kjlan}5.   ${color5}OpenList 다중 저장소 파일 목록 프로그램${gl_kjlan}6.   ${color6}Ubuntu 원격 데스크톱 웹 버전"
 	  echo -e "${gl_kjlan}7.   ${color7}나타 프로브 VPS 모니터링 패널${gl_kjlan}8.   ${color8}QB 오프라인 BT 자기 다운로드 패널"
 	  echo -e "${gl_kjlan}9.   ${color9}Poste.io 메일 서버 프로그램${gl_kjlan}10.  ${color10}RocketChat 다자간 온라인 채팅 시스템"
 	  echo -e "${gl_kjlan}-------------------------"
@@ -10558,7 +10757,7 @@ while true; do
 	  echo -e "${gl_kjlan}-------------------------"
 	  echo -e "${gl_kjlan}101. ${color101}AI 영상 생성 도구${gl_kjlan}102. ${color102}VoceChat 다자간 온라인 채팅 시스템"
 	  echo -e "${gl_kjlan}103. ${color103}Umami 웹사이트 통계 도구${gl_kjlan}104. ${color104}스트림 4계층 프록시 전달 도구"
-	  echo -e "${gl_kjlan}105. ${color105}쓰위안 노트${gl_kjlan}106. ${color106}Drawnix 오픈 소스 화이트보드 도구"
+	  echo -e "${gl_kjlan}105. ${color105}쓰위안 노트${gl_kjlan}106. ${color106}Drawix 오픈 소스 화이트보드 도구"
 	  echo -e "${gl_kjlan}107. ${color107}PanSou 네트워크 디스크 검색${gl_kjlan}108. ${color108}LangBot 챗봇"
 	  echo -e "${gl_kjlan}109. ${color109}ZFile 온라인 네트워크 디스크${gl_kjlan}110. ${color110}Karakeep 북마크 관리"
 	  echo -e "${gl_kjlan}-------------------------"
@@ -10788,7 +10987,7 @@ while true; do
 			check_docker_app
 			check_docker_image_update $docker_name
 			clear
-			echo -e "네자 모니터링$check_docker $update_status"
+			echo -e "나타 모니터링$check_docker $update_status"
 			echo "오픈 소스, 가볍고 사용하기 쉬운 서버 모니터링 및 운영 및 유지 관리 도구"
 			echo "공식 웹사이트 구축 문서: https://nezha.wiki/guide/dashboard.html"
 			if docker ps -a --format '{{.Names}}' 2>/dev/null | grep -q "$docker_name"; then
@@ -11199,7 +11398,7 @@ while true; do
 
 		}
 
-		local docker_describe="Speedtest 속도 측정 패널은 다양한 테스트 기능을 갖춘 VPS 네트워크 속도 테스트 도구이며 VPS 인바운드 및 아웃바운드 트래픽을 실시간으로 모니터링할 수도 있습니다."
+		local docker_describe="Speedtest 속도 테스트 패널은 다양한 테스트 기능을 갖춘 VPS 네트워크 속도 테스트 도구이며 VPS 인바운드 및 아웃바운드 트래픽을 실시간으로 모니터링할 수도 있습니다."
 		local docker_url="공식 웹사이트 소개:${gh_proxy}github.com/wikihost-opensource/als"
 		local docker_use=""
 		local docker_passwd=""
@@ -12301,7 +12500,7 @@ while true; do
 
 		local app_id="60"
 		local app_name="JumpServer 오픈 소스 요새 머신"
-		local app_text="오픈소스 권한 있는 액세스 관리(PAM) 도구입니다. 이 프로그램은 포트 80을 사용하며 액세스를 위한 도메인 이름 추가를 지원하지 않습니다."
+		local app_text="오픈소스 PAM(Privileged Access Management) 도구입니다. 이 프로그램은 포트 80을 사용하며 액세스를 위한 도메인 이름 추가를 지원하지 않습니다."
 		local app_url="공식 소개:${gh_https_url}github.com/jumpserver/jumpserver"
 		local docker_name="jms_web"
 		local docker_port="80"
@@ -12578,7 +12777,7 @@ while true; do
 
 		}
 
-		local docker_describe="대규모 AI 모델에 대한 WeChat, QQ 및 TG 액세스를 지원하는 오픈 소스 AI 챗봇 프레임워크"
+		local docker_describe="AI 대형 모델에 대한 WeChat, QQ 및 TG 액세스를 지원하는 오픈 소스 AI 챗봇 프레임워크"
 		local docker_url="공식 홈페이지 소개: https://astrbot.app/"
 		local docker_use="echo \"사용자 이름: astrbot 비밀번호: astrbot\""
 		local docker_passwd=""
@@ -12634,7 +12833,7 @@ while true; do
 
 		}
 
-		local docker_describe="귀하의 데이터를 통제할 수 있는 비밀번호 관리자"
+		local docker_describe="데이터를 제어할 수 있는 비밀번호 관리자"
 		local docker_url="공식 홈페이지 소개: https://bitwarden.com/"
 		local docker_use=""
 		local docker_passwd=""
@@ -12882,7 +13081,7 @@ while true; do
 
 		  local app_id="80"
 		  local app_name="링크워든 북마크 관리"
-		  local app_text="태그 지정, 검색 및 팀 협업을 지원하는 오픈 소스 자체 호스팅 북마크 관리 플랫폼입니다."
+		  local app_text="태그 지정, 검색 및 팀 협업을 지원하는 오픈 소스, 자체 호스팅 북마크 관리 플랫폼입니다."
 		  local app_url="공식 홈페이지: https://linkwarden.app/"
 		  local docker_name="linkwarden-linkwarden-1"
 		  local docker_port="8080"
@@ -13191,7 +13390,7 @@ while true; do
 
 		}
 
-		local docker_describe="영화와 생방송을 원격으로 함께 시청할 수 있는 프로그램입니다. 동시 시청, 라이브 방송, 채팅 및 기타 기능을 제공합니다."
+		local docker_describe="원격으로 영화와 생방송을 함께 시청할 수 있는 프로그램입니다. 동시 시청, 라이브 방송, 채팅 및 기타 기능을 제공합니다."
 		local docker_url="공식 웹사이트 소개:${gh_https_url}github.com/synctv-org/synctv"
 		local docker_use="echo \"초기 계정 및 비밀번호: root. 로그인 후 시간에 맞춰 로그인 비밀번호를 변경하세요\""
 		local docker_passwd=""
@@ -14277,7 +14476,7 @@ discourse,yunsou,ahhhhfs,nsgame,gying" \
 	  r)
 	  	root_use
 	  	send_stats "모든 앱 복원"
-	  	echo "사용 가능한 애플리케이션 백업"
+	  	echo "사용 가능한 앱 백업"
 	  	echo "-------------------------"
 	  	ls -lt /app*.gz | awk '{print $NF}'
 	  	echo ""
@@ -14339,7 +14538,7 @@ linux_work() {
 	  send_stats "백엔드 작업공간"
 	  echo -e "백엔드 작업공간"
 	  echo -e "시스템은 장기간 작업을 수행하는 데 사용할 수 있는 백그라운드에서 영구적으로 실행될 수 있는 작업 공간을 제공합니다."
-	  echo -e "SSH 연결을 끊더라도 작업 공간의 작업은 중단되지 않으며 작업은 백그라운드에 유지됩니다."
+	  echo -e "SSH 연결을 끊더라도 작업 공간의 작업은 중단되지 않으며 백그라운드 작업은 유지됩니다."
 	  echo -e "${gl_huang}힌트:${gl_bai}워크스페이스 진입 후 Ctrl+b를 누른 후 d만 눌러 워크스페이스를 종료하세요!"
 	  echo -e "${gl_kjlan}------------------------"
 	  echo "현재 존재하는 작업공간 목록"
@@ -14723,7 +14922,7 @@ log_menu() {
 		show_log_overview
 		echo
 		echo "=========== 시스템 로그 관리 메뉴 ==========="
-		echo "1. 최신 시스템 로그(일지) 보기"
+		echo "1. 최신 시스템 로그(일지)를 확인하세요."
 		echo "2. 지정된 서비스 로그 보기"
 		echo "3. 로그인/보안 로그 보기"
 		echo "4. 실시간 추적 로그"
@@ -14735,7 +14934,7 @@ log_menu() {
 		case $choice in
 			1)
 				send_stats "최근 로그 보기"
-				read -erp "가장 최근 로그 줄을 보시겠습니까? [기본값 100]:" lines
+				read -erp "최근 로그 줄을 몇 개나 보셨나요? [기본값 100]:" lines
 				lines=${lines:-100}
 				journalctl -n "$lines" --no-pager
 				read -erp "계속하려면 Enter를 누르세요..."
@@ -15009,10 +15208,10 @@ linux_Settings() {
 	  echo -e "시스템 도구"
 	  echo -e "${gl_kjlan}------------------------"
 	  echo -e "${gl_kjlan}1.   ${gl_bai}스크립트 시작 단축키 설정${gl_kjlan}2.   ${gl_bai}로그인 비밀번호 변경"
-	  echo -e "${gl_kjlan}3.   ${gl_bai}사용자 비밀번호 로그인 모드${gl_kjlan}4.   ${gl_bai}지정된 버전의 Python 설치"
+	  echo -e "${gl_kjlan}3.   ${gl_bai}사용자 비밀번호 로그인 모드${gl_kjlan}4.   ${gl_bai}지정된 Python 버전을 설치합니다."
 	  echo -e "${gl_kjlan}5.   ${gl_bai}모든 포트 열기${gl_kjlan}6.   ${gl_bai}SSH 연결 포트 수정"
 	  echo -e "${gl_kjlan}7.   ${gl_bai}DNS 주소 최적화${gl_kjlan}8.   ${gl_bai}한 번의 클릭으로 시스템을 다시 설치${gl_huang}★${gl_bai}"
-	  echo -e "${gl_kjlan}9.   ${gl_bai}ROOT 계정을 비활성화하고 새 계정을 만듭니다.${gl_kjlan}10.  ${gl_bai}우선 순위 ipv4/ipv6 전환"
+	  echo -e "${gl_kjlan}9.   ${gl_bai}ROOT 계정을 비활성화하고 새 계정을 만듭니다.${gl_kjlan}10.  ${gl_bai}우선순위 ipv4/ipv6 전환"
 	  echo -e "${gl_kjlan}------------------------"
 	  echo -e "${gl_kjlan}11.  ${gl_bai}항만점유현황 확인${gl_kjlan}12.  ${gl_bai}가상 메모리 크기 수정"
 	  echo -e "${gl_kjlan}13.  ${gl_bai}사용자 관리${gl_kjlan}14.  ${gl_bai}사용자/비밀번호 생성기"
@@ -15266,8 +15465,8 @@ EOF
 						;;
 					2)
 						rm -f /etc/gai.conf
-						echo "IPv6 우선순위로 전환됨"
-						send_stats "IPv6 우선순위로 전환됨"
+						echo "먼저 IPv6로 전환됨"
+						send_stats "먼저 IPv6로 전환됨"
 						;;
 
 					3)
@@ -15757,7 +15956,7 @@ EOF
 					echo -e "${gl_lv}현재 설정된 인바운드 트래픽 제한 임계값은 다음과 같습니다.${gl_huang}${rx_threshold_gb}${gl_lv}G${gl_bai}"
 					echo -e "${gl_lv}현재 설정된 아웃바운드 트래픽 제한 임계값은 다음과 같습니다.${gl_huang}${tx_threshold_gb}${gl_lv}GB${gl_bai}"
 				else
-					echo -e "${gl_hui}현재 제한 종료 기능이 현재 활성화되어 있지 않습니다.${gl_bai}"
+					echo -e "${gl_hui}현재 제한 종료 기능이 활성화되어 있지 않습니다.${gl_bai}"
 				fi
 
 				echo
@@ -15980,7 +16179,7 @@ EOF
 			  echo -e "9. DNS 주소 자동 최적화${gl_huang}해외: 1.1.1.1 8.8.8.8 국내: 223.5.5.5${gl_bai}"
 		  	  echo -e "10. 네트워크를 다음으로 설정합니다.${gl_huang}IPv4 우선순위${gl_bai}"
 			  echo -e "11. 기본 도구 설치${gl_huang}docker wget sudo tar unzip socat btop nano vim${gl_bai}"
-			  echo -e "12. Linux 시스템 커널 매개변수 최적화가 다음으로 전환됩니다.${gl_huang}균형 잡힌 최적화 모드${gl_bai}"
+			  echo -e "12. Linux 시스템 커널 매개변수 최적화${gl_huang}네트워크 환경에 따라 자동으로 튜닝${gl_bai}"
 			  echo "------------------------------------------------"
 			  read -e -p "원클릭 유지 관리를 원하시나요? (예/아니요):" choice
 
@@ -16034,7 +16233,7 @@ EOF
 				  echo -e "[${gl_lv}OK${gl_bai}] 11/12. 기본 도구 설치${gl_huang}docker wget sudo tar unzip socat btop nano vim${gl_bai}"
 				  echo "------------------------------------------------"
 
-				  optimize_balanced
+				  curl -sS ${gh_proxy}raw.githubusercontent.com/kejilion/sh/refs/heads/main/network-optimize.sh | bash
 				  echo -e "[${gl_lv}OK${gl_bai}] 12/12. Linux 시스템 커널 매개변수 최적화"
 				  echo -e "${gl_lv}원스톱 시스템 튜닝이 완료되었습니다${gl_bai}"
 
@@ -16380,7 +16579,7 @@ run_commands_on_servers() {
 	# 추출된 정보를 배열로 변환
 	IFS=$'\n' read -r -d '' -a SERVER_ARRAY <<< "$SERVERS"
 
-	# 서버를 순회하고 명령을 실행합니다.
+	# 서버를 탐색하고 명령을 실행합니다.
 	for ((i=0; i<${#SERVER_ARRAY[@]}; i+=5)); do
 		local name=${SERVER_ARRAY[i]}
 		local hostname=${SERVER_ARRAY[i+1]}
@@ -16388,7 +16587,7 @@ run_commands_on_servers() {
 		local username=${SERVER_ARRAY[i+3]}
 		local password=${SERVER_ARRAY[i+4]}
 		echo
-		echo -e "${gl_huang}연결 대상$name ($hostname)...${gl_bai}"
+		echo -e "${gl_huang}연결하다$name ($hostname)...${gl_bai}"
 		# sshpass -p "$password" ssh -o StrictHostKeyChecking=no "$username@$hostname" -p "$port" "$1"
 		sshpass -p "$password" ssh -t -o StrictHostKeyChecking=no "$username@$hostname" -p "$port" "$1"
 	done
@@ -16422,7 +16621,7 @@ while true; do
 	  echo -e "${gl_kjlan}일괄적으로 작업 실행${gl_bai}"
 	  echo -e "${gl_kjlan}11. ${gl_bai}기술 사자 스크립트 설치${gl_kjlan}12. ${gl_bai}시스템 업데이트${gl_kjlan}13. ${gl_bai}시스템 청소"
 	  echo -e "${gl_kjlan}14. ${gl_bai}도커 설치${gl_kjlan}15. ${gl_bai}BBR3 설치${gl_kjlan}16. ${gl_bai}1G 가상 메모리 설정"
-	  echo -e "${gl_kjlan}17. ${gl_bai}시간대를 상하이로 설정${gl_kjlan}18. ${gl_bai}모든 포트 열기${gl_kjlan}51. ${gl_bai}맞춤 지침"
+	  echo -e "${gl_kjlan}17. ${gl_bai}시간대를 상하이로 설정${gl_kjlan}18. ${gl_bai}모든 포트 열기${gl_kjlan}51. ${gl_bai}사용자 정의 지시어"
 	  echo -e "${gl_kjlan}------------------------${gl_bai}"
 	  echo -e "${gl_kjlan}0.  ${gl_bai}메인 메뉴로 돌아가기"
 	  echo -e "${gl_kjlan}------------------------${gl_bai}"
@@ -16463,7 +16662,7 @@ while true; do
 		  5)
 			  clear
 			  send_stats "클러스터 복원"
-			  echo "귀하의 server.py를 업로드하고 업로드를 시작하려면 아무 키나 누르십시오!"
+			  echo "server.py를 업로드하고 아무 키나 눌러 업로드를 시작하세요!"
 			  echo -e "업로드해주세요${gl_huang}servers.py${gl_bai}파일을 제출하다${gl_huang}/root/cluster/${gl_bai}복원 완료!"
 			  break_end
 			  ;;
@@ -16539,7 +16738,7 @@ echo "------------------------"
 echo -e "${gl_zi}V.PS 월 6.9달러 도쿄 소프트뱅크 2코어 1G 메모리 20G 하드드라이브 월 1T 트래픽${gl_bai}"
 echo -e "${gl_bai}URL: https://vps.hosting/cart/tokyo-cloud-kvm-vps/?id=148&?affid=1355&?affid=1355${gl_bai}"
 echo "------------------------"
-echo -e "${gl_kjlan}더 인기 있는 VPS 거래${gl_bai}"
+echo -e "${gl_kjlan}더 인기 있는 VPS 혜택${gl_bai}"
 echo -e "${gl_bai}홈페이지: https://kejilion.pro/topvps/${gl_bai}"
 echo "------------------------"
 echo ""
@@ -16778,7 +16977,7 @@ done
 
 
 k_info() {
-send_stats "k 명령 참조 예"
+send_stats "k 명령 참조 사용 사례"
 echo "-------------------"
 echo "영상 소개: https://www.bilibili.com/video/BV1ib421E7it?t=0.1"
 echo "다음은 k 명령의 참조 사용 사례입니다."

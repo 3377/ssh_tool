@@ -1,5 +1,5 @@
 #!/bin/bash
-sh_v="4.4.0"
+sh_v="4.4.1"
 
 
 gl_hui='\e[37m'
@@ -2936,7 +2936,7 @@ while true; do
 			rm -f /home/docker/${docker_name}_port.conf
 
 			sed -i "/\b${app_id}\b/d" /home/docker/appno.txt
-			echo "App has been uninstalled"
+			echo "App uninstalled"
 			send_stats "uninstall$docker_name"
 			;;
 
@@ -3522,7 +3522,7 @@ ldnmp_Proxy_backend() {
 list_stream_services() {
 
 	STREAM_DIR="/home/web/stream.d"
-	printf "%-25s %-18s %-25s %-20s\n" "Service name" "Communication type" "Local address" "Backend address"
+	printf "%-25s %-18s %-25s %-20s\n" "Service name" "Communication type" "local address" "Backend address"
 
 	if [ -z "$(ls -A "$STREAM_DIR")" ]; then
 		return
@@ -4312,7 +4312,7 @@ frps_panel() {
 				close_port 8055 8056
 
 				sed -i "/\b${app_id}\b/d" /home/docker/appno.txt
-				echo "App has been uninstalled"
+				echo "App uninstalled"
 				;;
 			5)
 				echo "Reverse intranet penetration service into domain name access"
@@ -4409,7 +4409,7 @@ frpc_panel() {
 				close_port 8055
 
 				sed -i "/\b${app_id}\b/d" /home/docker/appno.txt
-				echo "App has been uninstalled"
+				echo "App uninstalled"
 				;;
 
 			4)
@@ -4699,9 +4699,17 @@ linux_clean() {
 
 bbr_on() {
 
-sed -i '/net.ipv4.tcp_congestion_control=/d' /etc/sysctl.conf
-echo "net.ipv4.tcp_congestion_control=bbr" >> /etc/sysctl.conf
-sysctl -p
+# Unified writing to sysctl.d to prevent conflicts with the kernel tuning module
+local CONF="/etc/sysctl.d/99-kejilion-bbr.conf"
+mkdir -p /etc/sysctl.d
+echo "net.core.default_qdisc=fq" > "$CONF"
+echo "net.ipv4.tcp_congestion_control=bbr" >> "$CONF"
+
+# Clean up remnants of old sysctl.conf that may cause conflicts
+sed -i '/net.ipv4.tcp_congestion_control/d' /etc/sysctl.conf 2>/dev/null
+sed -i '/net.core.default_qdisc/d' /etc/sysctl.conf 2>/dev/null
+
+sysctl -p "$CONF" >/dev/null 2>&1 || sysctl --system >/dev/null 2>&1
 
 }
 
@@ -5848,171 +5856,348 @@ clamav() {
 }
 
 
+# ============================================================================
+# Linux kernel tuning module (refactored version)
+# Unified core functions + scene differentiation parameters + persistence to configuration files + hardware adaptation
+# Replace the original optimize_high_performance / optimize_balanced / optimize_web_server / restore_defaults
+# ============================================================================
 
+# Get memory size (MB)
+_get_mem_mb() {
+	awk '/MemTotal/{printf "%d", $2/1024}' /proc/meminfo
+}
 
-# High performance mode optimization function
+# Unified kernel tuning core functions
+# Parameters: $1 = mode name, $2 = scene (high/balanced/web/stream/game)
+_kernel_optimize_core() {
+	local mode_name="$1"
+	local scene="${2:-high}"
+	local CONF="/etc/sysctl.d/99-kejilion-optimize.conf"
+	local MEM_MB=$(_get_mem_mb)
+
+	echo -e "${gl_lv}switch to${mode_name}...${gl_bai}"
+
+	# ──Set parameters according to the scene──
+	local SWAPPINESS DIRTY_RATIO DIRTY_BG_RATIO OVERCOMMIT MIN_FREE_KB VFS_PRESSURE
+	local RMEM_MAX WMEM_MAX TCP_RMEM TCP_WMEM
+	local SOMAXCONN BACKLOG SYN_BACKLOG
+	local PORT_RANGE SCHED_AUTOGROUP THP NUMA FIN_TIMEOUT
+	local KEEPALIVE_TIME KEEPALIVE_INTVL KEEPALIVE_PROBES
+
+	case "$scene" in
+		high|stream|game)
+			# High Performance/Live Broadcasting/Gaming: Radical Parameters
+			SWAPPINESS=10
+			DIRTY_RATIO=15
+			DIRTY_BG_RATIO=5
+			OVERCOMMIT=1
+			VFS_PRESSURE=50
+			RMEM_MAX=67108864
+			WMEM_MAX=67108864
+			TCP_RMEM="4096 262144 67108864"
+			TCP_WMEM="4096 262144 67108864"
+			SOMAXCONN=8192
+			BACKLOG=250000
+			SYN_BACKLOG=8192
+			PORT_RANGE="1024 65535"
+			SCHED_AUTOGROUP=0
+			THP="never"
+			NUMA=0
+			FIN_TIMEOUT=10
+			KEEPALIVE_TIME=300
+			KEEPALIVE_INTVL=30
+			KEEPALIVE_PROBES=5
+			;;
+		web)
+			# Website server: high concurrency priority
+			SWAPPINESS=10
+			DIRTY_RATIO=20
+			DIRTY_BG_RATIO=10
+			OVERCOMMIT=1
+			VFS_PRESSURE=50
+			RMEM_MAX=33554432
+			WMEM_MAX=33554432
+			TCP_RMEM="4096 131072 33554432"
+			TCP_WMEM="4096 131072 33554432"
+			SOMAXCONN=16384
+			BACKLOG=10000
+			SYN_BACKLOG=16384
+			PORT_RANGE="1024 65535"
+			SCHED_AUTOGROUP=0
+			THP="never"
+			NUMA=0
+			FIN_TIMEOUT=15
+			KEEPALIVE_TIME=600
+			KEEPALIVE_INTVL=60
+			KEEPALIVE_PROBES=5
+			;;
+		balanced)
+			# Balanced Mode: Moderate Optimization
+			SWAPPINESS=30
+			DIRTY_RATIO=20
+			DIRTY_BG_RATIO=10
+			OVERCOMMIT=0
+			VFS_PRESSURE=75
+			RMEM_MAX=16777216
+			WMEM_MAX=16777216
+			TCP_RMEM="4096 87380 16777216"
+			TCP_WMEM="4096 65536 16777216"
+			SOMAXCONN=4096
+			BACKLOG=5000
+			SYN_BACKLOG=4096
+			PORT_RANGE="1024 49151"
+			SCHED_AUTOGROUP=1
+			THP="always"
+			NUMA=1
+			FIN_TIMEOUT=30
+			KEEPALIVE_TIME=600
+			KEEPALIVE_INTVL=60
+			KEEPALIVE_PROBES=5
+			;;
+	esac
+
+	# ── Adaptively adjust according to memory size ──
+	if [ "$MEM_MB" -ge 16384 ]; then
+		MIN_FREE_KB=131072
+		[ "$scene" != "balanced" ] && SWAPPINESS=5
+	elif [ "$MEM_MB" -ge 4096 ]; then
+		MIN_FREE_KB=65536
+	elif [ "$MEM_MB" -ge 1024 ]; then
+		MIN_FREE_KB=32768
+		# Small memory shrink buffer
+		if [ "$scene" != "balanced" ]; then
+			RMEM_MAX=16777216
+			WMEM_MAX=16777216
+			TCP_RMEM="4096 87380 16777216"
+			TCP_WMEM="4096 65536 16777216"
+		fi
+	else
+		MIN_FREE_KB=16384
+		SWAPPINESS=30
+		OVERCOMMIT=0
+		RMEM_MAX=4194304
+		WMEM_MAX=4194304
+		TCP_RMEM="4096 32768 4194304"
+		TCP_WMEM="4096 32768 4194304"
+		SOMAXCONN=1024
+		BACKLOG=1000
+	fi
+
+	# ── Additional live broadcast scenarios: UDP buffer enlarged ──
+	local STREAM_EXTRA=""
+	if [ "$scene" = "stream" ]; then
+		STREAM_EXTRA="
+# Live streaming UDP optimization
+net.ipv4.udp_rmem_min = 16384
+net.ipv4.udp_wmem_min = 16384
+net.ipv4.tcp_notsent_lowat = 16384"
+	fi
+
+	# ── Game server scene extra: low latency priority ──
+	local GAME_EXTRA=""
+	if [ "$scene" = "game" ]; then
+		GAME_EXTRA="
+# Game server low latency optimization
+net.ipv4.udp_rmem_min = 16384
+net.ipv4.udp_wmem_min = 16384
+net.ipv4.tcp_notsent_lowat = 16384
+net.ipv4.tcp_slow_start_after_idle = 0"
+	fi
+
+	# ── Load BBR module ──
+	local CC="bbr"
+	local QDISC="fq"
+	local KVER
+	KVER=$(uname -r | grep -oP '^\d+\.\d+')
+	if printf '%s\n%s' "4.9" "$KVER" | sort -V -C; then
+		if ! lsmod 2>/dev/null | grep -q tcp_bbr; then
+			modprobe tcp_bbr 2>/dev/null
+		fi
+		if ! sysctl net.ipv4.tcp_available_congestion_control 2>/dev/null | grep -q bbr; then
+			CC="cubic"
+			QDISC="fq_codel"
+		fi
+	else
+		CC="cubic"
+		QDISC="fq_codel"
+	fi
+
+	# ── Back up existing configuration ──
+	[ -f "$CONF" ] && cp "$CONF" "${CONF}.bak.$(date +%s)"
+
+	# ── Write configuration file (persistence) ──
+	echo -e "${gl_lv}Write optimization configuration...${gl_bai}"
+	cat > "$CONF" << SYSCTL
+# kejilion kernel tuning configuration
+# Mode: $mode_name | Scene: $scene
+# Memory: ${MEM_MB}MB | Generation time: $(date '+%Y-%m-%d %H:%M:%S')
+
+# ──TCP Congestion Control──
+net.core.default_qdisc = $QDISC
+net.ipv4.tcp_congestion_control = $CC
+
+# ── TCP buffer ──
+net.core.rmem_max = $RMEM_MAX
+net.core.wmem_max = $WMEM_MAX
+net.core.rmem_default = $(echo "$TCP_RMEM" | awk '{print $2}')
+net.core.wmem_default = $(echo "$TCP_WMEM" | awk '{print $2}')
+net.ipv4.tcp_rmem = $TCP_RMEM
+net.ipv4.tcp_wmem = $TCP_WMEM
+
+# ── Connection queue ──
+net.core.somaxconn = $SOMAXCONN
+net.core.netdev_max_backlog = $BACKLOG
+net.ipv4.tcp_max_syn_backlog = $SYN_BACKLOG
+
+# ── TCP connection optimization ──
+net.ipv4.tcp_fastopen = 3
+net.ipv4.tcp_tw_reuse = 1
+net.ipv4.tcp_fin_timeout = $FIN_TIMEOUT
+net.ipv4.tcp_keepalive_time = $KEEPALIVE_TIME
+net.ipv4.tcp_keepalive_intvl = $KEEPALIVE_INTVL
+net.ipv4.tcp_keepalive_probes = $KEEPALIVE_PROBES
+net.ipv4.tcp_max_tw_buckets = 65536
+net.ipv4.tcp_syncookies = 1
+net.ipv4.tcp_synack_retries = 2
+net.ipv4.tcp_syn_retries = 3
+net.ipv4.tcp_mtu_probing = 1
+net.ipv4.tcp_sack = 1
+net.ipv4.tcp_timestamps = 1
+net.ipv4.tcp_window_scaling = 1
+
+# ── Ports and Memory ──
+net.ipv4.ip_local_port_range = $PORT_RANGE
+net.ipv4.tcp_mem = $((MEM_MB * 1024 / 8)) $((MEM_MB * 1024 / 4)) $((MEM_MB * 1024 / 2))
+net.ipv4.tcp_max_orphans = 32768
+
+# ── Virtual memory ──
+vm.swappiness = $SWAPPINESS
+vm.dirty_ratio = $DIRTY_RATIO
+vm.dirty_background_ratio = $DIRTY_BG_RATIO
+vm.overcommit_memory = $OVERCOMMIT
+vm.min_free_kbytes = $MIN_FREE_KB
+vm.vfs_cache_pressure = $VFS_PRESSURE
+
+# ──CPU/kernel scheduling──
+kernel.sched_autogroup_enabled = $SCHED_AUTOGROUP
+$([ -f /proc/sys/kernel/numa_balancing ] && echo "kernel.numa_balancing = $NUMA" || echo "# numa_balancing not supported")
+
+# ──Safety protection──
+net.ipv4.conf.all.rp_filter = 1
+net.ipv4.conf.default.rp_filter = 1
+net.ipv4.icmp_echo_ignore_broadcasts = 1
+net.ipv4.icmp_ignore_bogus_error_responses = 1
+net.ipv4.conf.all.accept_redirects = 0
+net.ipv4.conf.default.accept_redirects = 0
+net.ipv4.conf.all.send_redirects = 0
+net.ipv4.conf.default.send_redirects = 0
+net.ipv6.conf.all.accept_redirects = 0
+net.ipv6.conf.default.accept_redirects = 0
+
+# ── File descriptor ──
+fs.file-max = 1048576
+fs.nr_open = 1048576
+
+# ── Connection tracking ──
+$(if [ -f /proc/sys/net/netfilter/nf_conntrack_max ]; then
+echo "net.netfilter.nf_conntrack_max = $((SOMAXCONN * 32))"
+echo "net.netfilter.nf_conntrack_tcp_timeout_established = 7200"
+echo "net.netfilter.nf_conntrack_tcp_timeout_time_wait = 30"
+echo "net.netfilter.nf_conntrack_tcp_timeout_close_wait = 15"
+echo "net.netfilter.nf_conntrack_tcp_timeout_fin_wait = 15"
+else
+echo "# conntrack is not enabled"
+fi)
+$STREAM_EXTRA
+$GAME_EXTRA
+SYSCTL
+
+	# ── Apply configuration (line by line, skip unsupported parameters) ──
+	echo -e "${gl_lv}Apply optimization parameters...${gl_bai}"
+	local applied=0 skipped=0
+	while IFS= read -r line; do
+		# Skip comments and blank lines
+		[[ "$line" =~ ^[[:space:]]*# ]] && continue
+		[[ -z "${line// /}" ]] && continue
+		if sysctl -w "$line" >/dev/null 2>&1; then
+			applied=$((applied + 1))
+		else
+			skipped=$((skipped + 1))
+		fi
+	done < "$CONF"
+	echo -e "${gl_lv}Applied${applied}Item parameter ${skipped:+, skip${skipped}Item unsupported parameter}${gl_bai}"
+
+	# ── Transparent large page ──
+	if [ -f /sys/kernel/mm/transparent_hugepage/enabled ]; then
+		echo "$THP" > /sys/kernel/mm/transparent_hugepage/enabled 2>/dev/null
+	fi
+
+	# ── File descriptor restrictions ──
+	if ! grep -q "# kejilion-optimize" /etc/security/limits.conf 2>/dev/null; then
+		cat >> /etc/security/limits.conf << 'LIMITS'
+
+# kejilion-optimize
+* soft nofile 1048576
+* hard nofile 1048576
+root soft nofile 1048576
+root hard nofile 1048576
+LIMITS
+	fi
+
+	# ── BBR persistence ──
+	if [ "$CC" = "bbr" ]; then
+		echo "tcp_bbr" > /etc/modules-load.d/bbr.conf 2>/dev/null
+		# Clean up the bbr configuration in the old sysctl.conf (to avoid conflicts)
+		sed -i '/net.ipv4.tcp_congestion_control/d' /etc/sysctl.conf 2>/dev/null
+	fi
+
+	echo -e "${gl_lv}${mode_name}Optimization completed! The configuration has been persisted to${CONF}${gl_bai}"
+	echo -e "${gl_lv}Memory:${MEM_MB}MB | Congestion algorithm:${CC}| Queue:${QDISC}${gl_bai}"
+}
+
+# ── Entry functions of each mode (keep the original calling interface unchanged) ──
+
 optimize_high_performance() {
-	echo -e "${gl_lv}switch to${tiaoyou_moshi}...${gl_bai}"
-
-	echo -e "${gl_lv}Optimize file descriptors...${gl_bai}"
-	ulimit -n 65535
-
-	echo -e "${gl_lv}Optimize virtual memory...${gl_bai}"
-	sysctl -w vm.swappiness=10 2>/dev/null
-	sysctl -w vm.dirty_ratio=15 2>/dev/null
-	sysctl -w vm.dirty_background_ratio=5 2>/dev/null
-	sysctl -w vm.overcommit_memory=1 2>/dev/null
-	sysctl -w vm.min_free_kbytes=65536 2>/dev/null
-
-	echo -e "${gl_lv}Optimize network settings...${gl_bai}"
-	sysctl -w net.core.rmem_max=16777216 2>/dev/null
-	sysctl -w net.core.wmem_max=16777216 2>/dev/null
-	sysctl -w net.core.netdev_max_backlog=250000 2>/dev/null
-	sysctl -w net.core.somaxconn=4096 2>/dev/null
-	sysctl -w net.ipv4.tcp_rmem='4096 87380 16777216' 2>/dev/null
-	sysctl -w net.ipv4.tcp_wmem='4096 65536 16777216' 2>/dev/null
-	sysctl -w net.ipv4.tcp_congestion_control=bbr 2>/dev/null
-	sysctl -w net.ipv4.tcp_max_syn_backlog=8192 2>/dev/null
-	sysctl -w net.ipv4.tcp_tw_reuse=1 2>/dev/null
-	sysctl -w net.ipv4.ip_local_port_range='1024 65535' 2>/dev/null
-
-	echo -e "${gl_lv}Optimize cache management...${gl_bai}"
-	sysctl -w vm.vfs_cache_pressure=50 2>/dev/null
-
-	echo -e "${gl_lv}Optimize CPU settings...${gl_bai}"
-	sysctl -w kernel.sched_autogroup_enabled=0 2>/dev/null
-
-	echo -e "${gl_lv}Other optimizations...${gl_bai}"
-	# Disable transparent huge pages to reduce latency
-	echo never > /sys/kernel/mm/transparent_hugepage/enabled
-	# Disable NUMA balancing
-	sysctl -w kernel.numa_balancing=0 2>/dev/null
-
-
+	_kernel_optimize_core "${tiaoyou_moshi:-高性能优化模式}" "high"
 }
 
-# Balanced mode optimization function
 optimize_balanced() {
-	echo -e "${gl_lv}Switch to equalization mode...${gl_bai}"
-
-	echo -e "${gl_lv}Optimize file descriptors...${gl_bai}"
-	ulimit -n 32768
-
-	echo -e "${gl_lv}Optimize virtual memory...${gl_bai}"
-	sysctl -w vm.swappiness=30 2>/dev/null
-	sysctl -w vm.dirty_ratio=20 2>/dev/null
-	sysctl -w vm.dirty_background_ratio=10 2>/dev/null
-	sysctl -w vm.overcommit_memory=0 2>/dev/null
-	sysctl -w vm.min_free_kbytes=32768 2>/dev/null
-
-	echo -e "${gl_lv}Optimize network settings...${gl_bai}"
-	sysctl -w net.core.rmem_max=8388608 2>/dev/null
-	sysctl -w net.core.wmem_max=8388608 2>/dev/null
-	sysctl -w net.core.netdev_max_backlog=125000 2>/dev/null
-	sysctl -w net.core.somaxconn=2048 2>/dev/null
-	sysctl -w net.ipv4.tcp_rmem='4096 87380 8388608' 2>/dev/null
-	sysctl -w net.ipv4.tcp_wmem='4096 32768 8388608' 2>/dev/null
-	sysctl -w net.ipv4.tcp_congestion_control=bbr 2>/dev/null
-	sysctl -w net.ipv4.tcp_max_syn_backlog=4096 2>/dev/null
-	sysctl -w net.ipv4.tcp_tw_reuse=1 2>/dev/null
-	sysctl -w net.ipv4.ip_local_port_range='1024 49151' 2>/dev/null
-
-	echo -e "${gl_lv}Optimize cache management...${gl_bai}"
-	sysctl -w vm.vfs_cache_pressure=75 2>/dev/null
-
-	echo -e "${gl_lv}Optimize CPU settings...${gl_bai}"
-	sysctl -w kernel.sched_autogroup_enabled=1 2>/dev/null
-
-	echo -e "${gl_lv}Other optimizations...${gl_bai}"
-	# Restore transparent huge pages
-	echo always > /sys/kernel/mm/transparent_hugepage/enabled
-	# Restore NUMA balancing
-	sysctl -w kernel.numa_balancing=1 2>/dev/null
-
-
+	_kernel_optimize_core "Balanced optimization mode" "balanced"
 }
 
-# Restore default settings function
+optimize_web_server() {
+	_kernel_optimize_core "Website construction optimization mode" "web"
+}
+
+# ── Restore default settings (complete clean) ──
 restore_defaults() {
 	echo -e "${gl_lv}Revert to default settings...${gl_bai}"
 
-	echo -e "${gl_lv}Restore file descriptors...${gl_bai}"
-	ulimit -n 1024
+	local CONF="/etc/sysctl.d/99-kejilion-optimize.conf"
 
-	echo -e "${gl_lv}Restore virtual memory...${gl_bai}"
-	sysctl -w vm.swappiness=60 2>/dev/null
-	sysctl -w vm.dirty_ratio=20 2>/dev/null
-	sysctl -w vm.dirty_background_ratio=10 2>/dev/null
-	sysctl -w vm.overcommit_memory=0 2>/dev/null
-	sysctl -w vm.min_free_kbytes=16384 2>/dev/null
+	# Delete the optimization configuration file (including external link automatic tuning configuration)
+	rm -f "$CONF"
+	rm -f /etc/sysctl.d/99-network-optimize.conf
 
-	echo -e "${gl_lv}Reset network settings...${gl_bai}"
-	sysctl -w net.core.rmem_max=212992 2>/dev/null
-	sysctl -w net.core.wmem_max=212992 2>/dev/null
-	sysctl -w net.core.netdev_max_backlog=1000 2>/dev/null
-	sysctl -w net.core.somaxconn=128 2>/dev/null
-	sysctl -w net.ipv4.tcp_rmem='4096 87380 6291456' 2>/dev/null
-	sysctl -w net.ipv4.tcp_wmem='4096 16384 4194304' 2>/dev/null
-	sysctl -w net.ipv4.tcp_congestion_control=cubic 2>/dev/null
-	sysctl -w net.ipv4.tcp_max_syn_backlog=2048 2>/dev/null
-	sysctl -w net.ipv4.tcp_tw_reuse=0 2>/dev/null
-	sysctl -w net.ipv4.ip_local_port_range='32768 60999' 2>/dev/null
+	# Clean up possible remaining bbr configuration in sysctl.conf
+	sed -i '/net.ipv4.tcp_congestion_control/d' /etc/sysctl.conf 2>/dev/null
 
-	echo -e "${gl_lv}Restore cache management...${gl_bai}"
-	sysctl -w vm.vfs_cache_pressure=100 2>/dev/null
+	# Reload system default configuration
+	sysctl --system 2>/dev/null | tail -1
 
-	echo -e "${gl_lv}Restore CPU settings...${gl_bai}"
-	sysctl -w kernel.sched_autogroup_enabled=1 2>/dev/null
-
-	echo -e "${gl_lv}Revert other optimizations...${gl_bai}"
 	# Restore transparent huge pages
-	echo always > /sys/kernel/mm/transparent_hugepage/enabled
-	# Restore NUMA balancing
-	sysctl -w kernel.numa_balancing=1 2>/dev/null
+	[ -f /sys/kernel/mm/transparent_hugepage/enabled ] && \
+		echo always > /sys/kernel/mm/transparent_hugepage/enabled 2>/dev/null
 
-}
+	# Clean file descriptor configuration
+	if grep -q "# kejilion-optimize" /etc/security/limits.conf 2>/dev/null; then
+		sed -i '/# kejilion-optimize/,+4d' /etc/security/limits.conf
+	fi
 
+	# Clean up BBR persistence
+	rm -f /etc/modules-load.d/bbr.conf 2>/dev/null
 
-
-# Website building optimization function
-optimize_web_server() {
-	echo -e "${gl_lv}Switch to website construction optimization mode...${gl_bai}"
-
-	echo -e "${gl_lv}Optimize file descriptors...${gl_bai}"
-	ulimit -n 65535
-
-	echo -e "${gl_lv}Optimize virtual memory...${gl_bai}"
-	sysctl -w vm.swappiness=10 2>/dev/null
-	sysctl -w vm.dirty_ratio=20 2>/dev/null
-	sysctl -w vm.dirty_background_ratio=10 2>/dev/null
-	sysctl -w vm.overcommit_memory=1 2>/dev/null
-	sysctl -w vm.min_free_kbytes=65536 2>/dev/null
-
-	echo -e "${gl_lv}Optimize network settings...${gl_bai}"
-	sysctl -w net.core.rmem_max=16777216 2>/dev/null
-	sysctl -w net.core.wmem_max=16777216 2>/dev/null
-	sysctl -w net.core.netdev_max_backlog=5000 2>/dev/null
-	sysctl -w net.core.somaxconn=4096 2>/dev/null
-	sysctl -w net.ipv4.tcp_rmem='4096 87380 16777216' 2>/dev/null
-	sysctl -w net.ipv4.tcp_wmem='4096 65536 16777216' 2>/dev/null
-	sysctl -w net.ipv4.tcp_congestion_control=bbr 2>/dev/null
-	sysctl -w net.ipv4.tcp_max_syn_backlog=8192 2>/dev/null
-	sysctl -w net.ipv4.tcp_tw_reuse=1 2>/dev/null
-	sysctl -w net.ipv4.ip_local_port_range='1024 65535' 2>/dev/null
-
-	echo -e "${gl_lv}Optimize cache management...${gl_bai}"
-	sysctl -w vm.vfs_cache_pressure=50 2>/dev/null
-
-	echo -e "${gl_lv}Optimize CPU settings...${gl_bai}"
-	sysctl -w kernel.sched_autogroup_enabled=0 2>/dev/null
-
-	echo -e "${gl_lv}Other optimizations...${gl_bai}"
-	# Disable transparent huge pages to reduce latency
-	echo never > /sys/kernel/mm/transparent_hugepage/enabled
-	# Disable NUMA balancing
-	sysctl -w kernel.numa_balancing=0 2>/dev/null
-
-
+	echo -e "${gl_lv}System has been restored to default settings${gl_bai}"
 }
 
 
@@ -6021,18 +6206,26 @@ Kernel_optimize() {
 	while true; do
 	  clear
 	  send_stats "Linux kernel tuning management"
+	  local current_mode=$(grep "^# Mode:" /etc/sysctl.d/99-kejilion-optimize.conf 2>/dev/null | sed 's/# mode: //' | awk -F'|' '{print $1}' | xargs)
+	  [ -z "$current_mode" ] && [ -f /etc/sysctl.d/99-network-optimize.conf ] && current_mode="Automatic tuning mode"
 	  echo "Linux system kernel parameter optimization"
+	  if [ -n "$current_mode" ]; then
+		  echo -e "Current mode:${gl_lv}${current_mode}${gl_bai}"
+	  else
+		  echo -e "Current mode:${gl_hui}Not optimized${gl_bai}"
+	  fi
 	  echo "Video introduction: https://www.bilibili.com/video/BV1Kb421J7yg?t=0.1"
 	  echo "------------------------------------------------"
 	  echo "Provides a variety of system parameter tuning modes, and users can choose to switch according to their own usage scenarios."
 	  echo -e "${gl_huang}hint:${gl_bai}Please use it with caution in production environment!"
-	  echo "--------------------"
-	  echo "1. High-performance optimization mode: Maximize system performance and optimize file descriptors, virtual memory, network settings, cache management and CPU settings."
-	  echo "2. Balanced optimization mode: strikes a balance between performance and resource consumption, suitable for daily use."
-	  echo "3. Website optimization mode: Optimize the website server to improve concurrent connection processing capabilities, response speed and overall performance."
-	  echo "4. Live broadcast optimization mode: Optimize the special needs of live streaming to reduce delays and improve transmission performance."
-	  echo "5. Game server optimization mode: Optimize the game server to improve concurrent processing capabilities and response speed."
-	  echo "6. Restore default settings: Restore system settings to default configuration."
+	  echo -e "--------------------"
+	  echo -e "1. High-performance optimization mode: Maximize system performance, aggressive memory and network parameters."
+	  echo -e "2. Balanced optimization mode: strikes a balance between performance and resource consumption, suitable for daily use."
+	  echo -e "3. Website optimization mode: Optimized for website servers, ultra-high concurrent connection queue."
+	  echo -e "4. Live broadcast optimization mode: For live streaming optimization, the UDP buffer is enlarged to reduce delays."
+	  echo -e "5. Game server optimization mode: Optimized for game servers, giving priority to low latency."
+	  echo -e "6. Restore default settings: Restore system settings to default configuration."
+	  echo -e "7. Automatic tuning: Automatically tune kernel parameters based on test data.${gl_huang}★${gl_bai}"
 	  echo "--------------------"
 	  echo "0. Return to the previous menu"
 	  echo "--------------------"
@@ -6055,28 +6248,35 @@ Kernel_optimize() {
 			  cd ~
 			  clear
 			  optimize_web_server
-			  send_stats "Website optimization mode"
+			  send_stats "Website optimization model"
 			  ;;
 		  4)
 			  cd ~
 			  clear
-			  local tiaoyou_moshi="Live broadcast optimization mode"
-			  optimize_high_performance
+			  _kernel_optimize_core "Live broadcast optimization mode" "stream"
 			  send_stats "Live streaming optimization"
 			  ;;
 		  5)
 			  cd ~
 			  clear
-			  local tiaoyou_moshi="Game server optimization mode"
-			  optimize_high_performance
+			  _kernel_optimize_core "Game server optimization mode" "game"
 			  send_stats "Game server optimization"
 			  ;;
 		  6)
 			  cd ~
 			  clear
 			  restore_defaults
+			  curl -sS ${gh_proxy}raw.githubusercontent.com/kejilion/sh/refs/heads/main/network-optimize.sh -o /tmp/network-optimize.sh && source /tmp/network-optimize.sh && restore_network_defaults
 			  send_stats "Restore default settings"
 			  ;;
+
+		  7)
+			  cd ~
+			  clear
+			  curl -sS ${gh_proxy}raw.githubusercontent.com/kejilion/sh/refs/heads/main/network-optimize.sh | bash
+			  send_stats "Kernel automatic tuning"
+			  ;;
+
 		  *)
 			  break
 			  ;;
@@ -6084,6 +6284,8 @@ Kernel_optimize() {
 	  break_end
 	done
 }
+
+
 
 
 
@@ -6318,9 +6520,9 @@ send_stats "Command Favorites"
 bash <(curl -l -s ${gh_proxy}raw.githubusercontent.com/byJoey/cmdbox/refs/heads/main/install.sh)
 }
 
-# Create backup
+# Create a backup
 create_backup() {
-	send_stats "Create backup"
+	send_stats "Create a backup"
 	local TIMESTAMP=$(date +"%Y%m%d%H%M%S")
 
 	# Prompt user for backup directory
@@ -6362,7 +6564,7 @@ create_backup() {
 		echo "- $path"
 	done
 
-	# Create backup
+	# Create a backup
 	echo "Creating backup$BACKUP_NAME..."
 	install tar
 	tar -czvf "$BACKUP_DIR/$BACKUP_NAME" "${BACKUP_PATHS[@]}"
@@ -6505,7 +6707,7 @@ add_connection() {
 				if [[ -z "$line" && "$password_or_key" == *"-----BEGIN"* ]]; then
 					break
 				fi
-				# If it is the first line or you have already started entering the key content, continue adding
+				# If it is the first line or you have already started to enter the key content, continue adding
 				if [[ -n "$line" || "$password_or_key" == *"-----BEGIN"* ]]; then
 					local password_or_key+="${line}"$'\n'
 				fi
@@ -6811,7 +7013,7 @@ disk_manager() {
 	send_stats "Hard disk management function"
 	while true; do
 		clear
-		echo "Hard drive partition management"
+		echo "Hard disk partition management"
 		echo -e "${gl_huang}This feature is under internal testing and should not be used in a production environment.${gl_bai}"
 		echo "------------------------"
 		list_partitions
@@ -6881,7 +7083,7 @@ add_task() {
 				if [[ -z "$line" && "$password_or_key" == *"-----BEGIN"* ]]; then
 					break
 				fi
-				# If it is the first line or you have already started entering the key content, continue adding
+				# If it is the first line or you have already started to enter the key content, continue adding
 				if [[ -n "$line" || "$password_or_key" == *"-----BEGIN"* ]]; then
 					password_or_key+="${line}"$'\n'
 				fi
@@ -7018,7 +7220,7 @@ run_task() {
 	else
 		echo "Sync failed! Please check the following:"
 		echo "1. Is the network connection normal?"
-		echo "2. Whether the remote host is accessible"
+		echo "2. Is the remote host accessible?"
 		echo "3. Is the authentication information correct?"
 		echo "4. Do the local and remote directories have correct access permissions?"
 	fi
@@ -7235,7 +7437,7 @@ linux_tools() {
 
   while true; do
 	  clear
-	  # send_stats "Basic tools"
+	  # send_stats "Basic Tools"
 	  echo -e "basic tools"
 
 	  tools=(
@@ -7870,7 +8072,7 @@ docker_ssh_migration() {
 
 		echo -e "${gl_huang}Transferring backup...${gl_bai}"
 		if [[ -z "$TARGET_PASS" ]]; then
-			# Log in using key
+			# Log in with key
 			scp -P "$TARGET_PORT" -o StrictHostKeyChecking=no -r "$LATEST_TAR" "$TARGET_USER@$TARGET_IP:/tmp/"
 		fi
 
@@ -8237,7 +8439,7 @@ linux_test() {
 	  echo -e "${gl_kjlan}14.  ${gl_bai}nxtrace fast backhaul test script"
 	  echo -e "${gl_kjlan}15.  ${gl_bai}nxtrace specifies IP backhaul test script"
 	  echo -e "${gl_kjlan}16.  ${gl_bai}ludashi2020 three network line test"
-	  echo -e "${gl_kjlan}17.  ${gl_bai}i-abc multi-function speed test script"
+	  echo -e "${gl_kjlan}17.  ${gl_bai}i-abc multifunctional speed test script"
 	  echo -e "${gl_kjlan}18.  ${gl_bai}NetQuality network quality check script${gl_huang}★${gl_bai}"
 
 	  echo -e "${gl_kjlan}------------------------"
@@ -9740,8 +9942,8 @@ moltbot_menu() {
 
 
 	start_bot() {
-		echo "Starting OpenClaw..."
-		send_stats "Starting OpenClaw..."
+		echo "Start OpenClaw..."
+		send_stats "Start OpenClaw..."
 		start_gateway
 		break_end
 	}
@@ -9805,30 +10007,26 @@ moltbot_menu() {
 			[[ $first == false ]] && models_array+=","
 			first=false
 
-			# Infer context window based on model name
-			local context_window=131072
-			local max_tokens=8192
-			local input_cost=0.14
-			local output_cost=0.28
+			# context and max_tokens are fully loaded, so you are not afraid of the big problem
+			local context_window=1048576
+			local max_tokens=128000
+
+			# Only price needs to be graded
+			local input_cost=0.15
+			local output_cost=0.60
 
 			case "$model_id" in
-				*preview*|*thinking*|*opus*|*pro*)
-					context_window=1048576  # 1M
-					max_tokens=16384
-					input_cost=0.30
-					output_cost=0.60
+				*opus*|*pro*|*preview*|*thinking*|*sonnet*)
+					input_cost=2.00
+					output_cost=12.00
 					;;
 				*gpt-5*|*codex*)
-					context_window=131072   # 128K
-					max_tokens=8192
-					input_cost=0.20
-					output_cost=0.40
+					input_cost=1.25
+					output_cost=10.00
 					;;
-				*flash*|*lite*|*haiku*)
-					context_window=131072
-					max_tokens=8192
-					input_cost=0.07
-					output_cost=0.14
+				*flash*|*lite*|*haiku*|*mini*|*nano*)
+					input_cost=0.10
+					output_cost=0.40
 					;;
 			esac
 
@@ -10035,7 +10233,7 @@ EOF
 			echo "----------------------------------------"
 
 			# Output a list of recommended practical plug-ins for users to copy
-			echo "Recommended practical plug-ins (you can directly copy the name input):"
+			echo "Recommended practical plug-ins (you can directly copy the name and enter it):"
 			echo "feishu # Feishu/Lark integration (currently loaded ✓)"
 			echo "telegram # Telegram bot integration (currently loaded ✓)"
 			echo "memory-core # Core memory enhancement: file-based contextual search (currently loaded ✓)"
@@ -10074,7 +10272,7 @@ EOF
 				echo "💡 It is detected that the plug-in already exists in the system directory and is being activated directly..."
 				openclaw plugins enable "$plugin_name"
 			else
-				echo "📥 Downloading and installing plug-ins through official channels..."
+				echo "📥 Downloading and installing the plug-in through official channels..."
 				# Use openclaw's own install command, which automatically handles spec checking of package.json
 				openclaw plugins install "$plugin_name"
 
@@ -10274,6 +10472,7 @@ EOF
 		send_stats "Update OpenClaw..."
 		install_node_and_tools
 		npm install -g openclaw@latest
+		crontab -l 2>/dev/null | grep -v "s gateway" | crontab -
 		start_gateway
 		hash -r
 		add_app_id
@@ -10498,7 +10697,7 @@ while true; do
 
 	  echo -e "${gl_kjlan}1.   ${color1}Pagoda panel official version${gl_kjlan}2.   ${color2}aaPanel Pagoda International Version"
 	  echo -e "${gl_kjlan}3.   ${color3}1Panel new generation management panel${gl_kjlan}4.   ${color4}NginxProxyManager visualization panel"
-	  echo -e "${gl_kjlan}5.   ${color5}OpenList multi-store file list program${gl_kjlan}6.   ${color6}Ubuntu Remote Desktop Web Edition"
+	  echo -e "${gl_kjlan}5.   ${color5}OpenList multi-store file list program${gl_kjlan}6.   ${color6}Ubuntu Remote Desktop Web Version"
 	  echo -e "${gl_kjlan}7.   ${color7}Nezha Probe VPS Monitoring Panel${gl_kjlan}8.   ${color8}QB offline BT magnetic download panel"
 	  echo -e "${gl_kjlan}9.   ${color9}Poste.io mail server program${gl_kjlan}10.  ${color10}RocketChat multi-person online chat system"
 	  echo -e "${gl_kjlan}-------------------------"
@@ -10972,7 +11171,7 @@ while true; do
 					rm -rf /home/docker/mail
 
 					sed -i "/\b${app_id}\b/d" /home/docker/appno.txt
-					echo "App has been uninstalled"
+					echo "App uninstalled"
 					;;
 
 				*)
@@ -11026,7 +11225,7 @@ while true; do
 			docker rm -f db
 			docker rmi -f mongo:latest
 			rm -rf /home/docker/mongo
-			echo "App has been uninstalled"
+			echo "App uninstalled"
 		}
 
 		docker_app_plus
@@ -11124,7 +11323,7 @@ while true; do
 		docker_app_uninstall() {
 			cd /home/docker/cloud/ && docker compose down --rmi all
 			rm -rf /home/docker/cloud
-			echo "App has been uninstalled"
+			echo "App uninstalled"
 		}
 
 		docker_app_plus
@@ -11199,7 +11398,7 @@ while true; do
 
 		}
 
-		local docker_describe="Speedtest speed measurement panel is a VPS network speed test tool with multiple test functions and can also monitor VPS inbound and outbound traffic in real time."
+		local docker_describe="Speedtest speed test panel is a VPS network speed test tool with multiple test functions and can also monitor VPS inbound and outbound traffic in real time."
 		local docker_url="Official website introduction:${gh_proxy}github.com/wikihost-opensource/als"
 		local docker_use=""
 		local docker_passwd=""
@@ -12010,7 +12209,7 @@ while true; do
 			docker rmi -f grafana/grafana:latest
 
 			rm -rf /home/docker/monitoring
-			echo "App has been uninstalled"
+			echo "App uninstalled"
 		}
 
 		docker_app_plus
@@ -12237,7 +12436,7 @@ while true; do
 		docker_app_uninstall() {
 			cd  /home/docker/dify/docker/ && docker compose down --rmi all
 			rm -rf /home/docker/dify
-			echo "App has been uninstalled"
+			echo "App uninstalled"
 		}
 
 		docker_app_plus
@@ -12289,7 +12488,7 @@ while true; do
 		docker_app_uninstall() {
 			cd  /home/docker/new-api/ && docker compose down --rmi all
 			rm -rf /home/docker/new-api
-			echo "App has been uninstalled"
+			echo "App uninstalled"
 		}
 
 		docker_app_plus
@@ -12330,7 +12529,7 @@ while true; do
 			cd /opt
 			rm -rf jumpserver-installer*/
 			rm -rf jumpserver
-			echo "App has been uninstalled"
+			echo "App uninstalled"
 		}
 
 		docker_app_plus
@@ -12393,7 +12592,7 @@ while true; do
 		docker_app_uninstall() {
 			cd  /home/docker/ragflow/docker/ && docker compose down --rmi all
 			rm -rf /home/docker/ragflow
-			echo "App has been uninstalled"
+			echo "App uninstalled"
 		}
 
 		docker_app_plus
@@ -12578,7 +12777,7 @@ while true; do
 
 		}
 
-		local docker_describe="Open source AI chatbot framework, supporting WeChat, QQ, and TG access to large AI models"
+		local docker_describe="Open source AI chatbot framework, supporting WeChat, QQ, and TG access to AI large models"
 		local docker_url="Official website introduction: https://astrbot.app/"
 		local docker_use="echo \"Username: astrbot Password: astrbot\""
 		local docker_passwd=""
@@ -12607,7 +12806,7 @@ while true; do
 
 		}
 
-		local docker_describe="It is a lightweight, high-performance music streaming server"
+		local docker_describe="Is a lightweight, high-performance music streaming server"
 		local docker_url="Official website introduction: https://www.navidrome.org/"
 		local docker_use=""
 		local docker_passwd=""
@@ -12634,7 +12833,7 @@ while true; do
 
 		}
 
-		local docker_describe="A password manager that puts you in control of your data"
+		local docker_describe="A password manager where you can control your data"
 		local docker_url="Official website introduction: https://bitwarden.com/"
 		local docker_use=""
 		local docker_passwd=""
@@ -12721,7 +12920,7 @@ while true; do
 		docker_app_uninstall() {
 			cd /home/docker/moontv/ && docker compose down --rmi all
 			rm -rf /home/docker/moontv
-			echo "App has been uninstalled"
+			echo "App uninstalled"
 		}
 
 		docker_app_plus
@@ -12942,7 +13141,7 @@ while true; do
 		  docker_app_uninstall() {
 			  cd /home/docker/linkwarden && docker compose down --rmi all
 			  rm -rf /home/docker/linkwarden
-			  echo "App has been uninstalled"
+			  echo "App uninstalled"
 		  }
 
 		  docker_app_plus
@@ -12992,7 +13191,7 @@ while true; do
 			  cd "$(ls -dt */ | head -n 1)"
 			  docker compose down --rmi all
 			  rm -rf /home/docker/jitsi
-			  echo "App has been uninstalled"
+			  echo "App uninstalled"
 		  }
 
 		  docker_app_plus
@@ -13128,7 +13327,7 @@ while true; do
 		  docker_app_uninstall() {
 			  cd /home/docker/${docker_name} && docker compose down --rmi all
 			  rm -rf /home/docker/${docker_name}
-			  echo "App has been uninstalled"
+			  echo "App uninstalled"
 		  }
 
 		  docker_app_plus
@@ -13191,7 +13390,7 @@ while true; do
 
 		}
 
-		local docker_describe="A program to watch movies and live broadcasts together remotely. It provides simultaneous viewing, live broadcast, chat and other functions"
+		local docker_describe="A program for watching movies and live broadcasts together remotely. It provides simultaneous viewing, live broadcast, chat and other functions"
 		local docker_url="Official website introduction:${gh_https_url}github.com/synctv-org/synctv"
 		local docker_use="echo \"Initial account and password: root. Please change the login password in time after logging in\""
 		local docker_passwd=""
@@ -13355,7 +13554,7 @@ while true; do
 		docker_app_uninstall() {
 			cd /home/docker/gitea/ && docker compose down --rmi all
 			rm -rf /home/docker/gitea
-			echo "App has been uninstalled"
+			echo "App uninstalled"
 		}
 
 		docker_app_plus
@@ -13493,7 +13692,7 @@ while true; do
 		docker_app_uninstall() {
 			cd /home/docker/paperless/ && docker compose down --rmi all
 			rm -rf /home/docker/paperless
-			echo "App has been uninstalled"
+			echo "App uninstalled"
 		}
 
 		docker_app_plus
@@ -13547,7 +13746,7 @@ while true; do
 		docker_app_uninstall() {
 			cd /home/docker/2fauth/ && docker compose down --rmi all
 			rm -rf /home/docker/2fauth
-			echo "App has been uninstalled"
+			echo "App uninstalled"
 		}
 
 		docker_app_plus
@@ -13780,7 +13979,7 @@ while true; do
 		docker_app_uninstall() {
 			cd /home/docker/dsm/ && docker compose down --rmi all
 			rm -rf /home/docker/dsm
-			echo "App has been uninstalled"
+			echo "App uninstalled"
 		}
 
 		docker_app_plus
@@ -13822,7 +14021,7 @@ while true; do
 	  101|moneyprinterturbo)
 		local app_id="101"
 		local app_name="AI video generation tool"
-		local app_text="MoneyPrinterTurbo is a tool that uses AI large models to synthesize high-definition short videos"
+		local app_text="MoneyPrinterTurbo is a tool that uses AI large models to synthesize high-definition short videos."
 		local app_url="Official website:${gh_https_url}github.com/harry0703/MoneyPrinterTurbo"
 		local docker_name="moneyprinterturbo"
 		local docker_port="8101"
@@ -13851,7 +14050,7 @@ while true; do
 		docker_app_uninstall() {
 			cd  /home/docker/MoneyPrinterTurbo/ && docker compose down --rmi all
 			rm -rf /home/docker/MoneyPrinterTurbo
-			echo "App has been uninstalled"
+			echo "App uninstalled"
 		}
 
 		docker_app_plus
@@ -13920,7 +14119,7 @@ while true; do
 		docker_app_uninstall() {
 			cd  /home/docker/umami/ && docker compose down --rmi all
 			rm -rf /home/docker/umami
-			echo "App has been uninstalled"
+			echo "App uninstalled"
 		}
 
 		docker_app_plus
@@ -14061,7 +14260,7 @@ discourse,yunsou,ahhhhfs,nsgame,gying" \
 		docker_app_uninstall() {
 			cd  /home/docker/LangBot/docker/ && docker compose down --rmi all
 			rm -rf /home/docker/LangBot
-			echo "App has been uninstalled"
+			echo "App uninstalled"
 		}
 
 		docker_app_plus
@@ -14131,7 +14330,7 @@ discourse,yunsou,ahhhhfs,nsgame,gying" \
 		docker_app_uninstall() {
 			cd  /home/docker/karakeep/docker/ && docker compose down --rmi all
 			rm -rf /home/docker/karakeep
-			echo "App has been uninstalled"
+			echo "App uninstalled"
 		}
 
 		docker_app_plus
@@ -14171,7 +14370,7 @@ discourse,yunsou,ahhhhfs,nsgame,gying" \
 		local app_id="112"
 		local docker_name="lucky"
 		local docker_img="gdy666/lucky:v2"
-		# Since Lucky uses the host network mode, the port here is only for record/explanation reference and is actually controlled by the application itself (default 16601)
+		# Since Lucky uses the host network mode, the port here is only for record/explanation reference, and is actually controlled by the application itself (default 16601)
 		local docker_port=8112
 
 		docker_rum() {
@@ -14277,7 +14476,7 @@ discourse,yunsou,ahhhhfs,nsgame,gying" \
 	  r)
 	  	root_use
 	  	send_stats "Restore all apps"
-	  	echo "Available application backups"
+	  	echo "Available app backups"
 	  	echo "-------------------------"
 	  	ls -lt /app*.gz | awk '{print $NF}'
 	  	echo ""
@@ -14339,7 +14538,7 @@ linux_work() {
 	  send_stats "Backend workspace"
 	  echo -e "Backend workspace"
 	  echo -e "The system will provide you with a workspace that can run permanently in the background, which you can use to perform long-term tasks."
-	  echo -e "Even if you disconnect SSH, the tasks in the workspace will not be interrupted, and the tasks will remain in the background."
+	  echo -e "Even if you disconnect SSH, the tasks in the workspace will not be interrupted, and the background tasks will persist."
 	  echo -e "${gl_huang}hint:${gl_bai}After entering the workspace, use Ctrl+b and then press d alone to exit the workspace!"
 	  echo -e "${gl_kjlan}------------------------"
 	  echo "List of currently existing workspaces"
@@ -14723,7 +14922,7 @@ log_menu() {
 		show_log_overview
 		echo
 		echo "=========== System log management menu ==========="
-		echo "1. View the latest system log (journal)"
+		echo "1. Check the latest system log (journal)"
 		echo "2. View the specified service log"
 		echo "3. View login/security logs"
 		echo "4. Real-time tracking logs"
@@ -14735,7 +14934,7 @@ log_menu() {
 		case $choice in
 			1)
 				send_stats "View recent logs"
-				read -erp "View the most recent log lines? [Default 100]:" lines
+				read -erp "How many recent log lines have you viewed? [Default 100]:" lines
 				lines=${lines:-100}
 				journalctl -n "$lines" --no-pager
 				read -erp "Press Enter to continue..."
@@ -15005,7 +15204,7 @@ linux_Settings() {
 
 	while true; do
 	  clear
-	  # send_stats "System Tools"
+	  # send_stats "system tools"
 	  echo -e "system tools"
 	  echo -e "${gl_kjlan}------------------------"
 	  echo -e "${gl_kjlan}1.   ${gl_bai}Set script startup shortcut key${gl_kjlan}2.   ${gl_bai}Change login password"
@@ -15080,7 +15279,7 @@ linux_Settings() {
 			echo "python version management"
 			echo "Video introduction: https://www.bilibili.com/video/BV1Pm42157cK?t=0.1"
 			echo "---------------------------------------"
-			echo "This function can seamlessly install any version officially supported by python!"
+			echo "This function can seamlessly install any version officially supported by Python!"
 			local VERSION=$(python3 -V 2>&1 | awk '{print $2}')
 			echo -e "Current python version number:${gl_huang}$VERSION${gl_bai}"
 			echo "------------"
@@ -15266,8 +15465,8 @@ EOF
 						;;
 					2)
 						rm -f /etc/gai.conf
-						echo "Switched to IPv6 priority"
-						send_stats "Switched to IPv6 priority"
+						echo "Switched to IPv6 first"
+						send_stats "Switched to IPv6 first"
 						;;
 
 					3)
@@ -15757,7 +15956,7 @@ EOF
 					echo -e "${gl_lv}The currently set inbound traffic limit threshold is:${gl_huang}${rx_threshold_gb}${gl_lv}G${gl_bai}"
 					echo -e "${gl_lv}The currently set outbound traffic limiting threshold is:${gl_huang}${tx_threshold_gb}${gl_lv}GB${gl_bai}"
 				else
-					echo -e "${gl_hui}The current limiting shutdown function is not currently enabled${gl_bai}"
+					echo -e "${gl_hui}Current limiting shutdown function is not currently enabled${gl_bai}"
 				fi
 
 				echo
@@ -15978,9 +16177,9 @@ EOF
 			  echo -e "7. Turn on${gl_huang}BBR${gl_bai}accelerate"
 			  echo -e "8. Set time zone to${gl_huang}Shanghai${gl_bai}"
 			  echo -e "9. Automatically optimize DNS addresses${gl_huang}Overseas: 1.1.1.1 8.8.8.8 Domestic: 223.5.5.5${gl_bai}"
-		  	  echo -e "10. Set the network to${gl_huang}IPv4 priority${gl_bai}"
+		  	  echo -e "10. Set the network to${gl_huang}ipv4 priority${gl_bai}"
 			  echo -e "11. Install basic tools${gl_huang}docker wget sudo tar unzip socat btop nano vim${gl_bai}"
-			  echo -e "12. Linux system kernel parameter optimization switches to${gl_huang}Balanced optimization mode${gl_bai}"
+			  echo -e "12. Linux system kernel parameter optimization${gl_huang}Automatically tune according to network environment${gl_bai}"
 			  echo "------------------------------------------------"
 			  read -e -p "Are you sure you want one-click maintenance? (Y/N):" choice
 
@@ -16026,7 +16225,7 @@ EOF
 				  echo -e "[${gl_lv}OK${gl_bai}] 9/12. Automatically optimize DNS address${gl_huang}${gl_bai}"
 				  echo "------------------------------------------------"
 				  prefer_ipv4
-				  echo -e "[${gl_lv}OK${gl_bai}] 10/12. Set the network to${gl_huang}IPv4 priority${gl_bai}}"
+				  echo -e "[${gl_lv}OK${gl_bai}] 10/12. Set the network to${gl_huang}ipv4 priority${gl_bai}}"
 
 				  echo "------------------------------------------------"
 				  install_docker
@@ -16034,7 +16233,7 @@ EOF
 				  echo -e "[${gl_lv}OK${gl_bai}] 11/12. Install basic tools${gl_huang}docker wget sudo tar unzip socat btop nano vim${gl_bai}"
 				  echo "------------------------------------------------"
 
-				  optimize_balanced
+				  curl -sS ${gh_proxy}raw.githubusercontent.com/kejilion/sh/refs/heads/main/network-optimize.sh | bash
 				  echo -e "[${gl_lv}OK${gl_bai}] 12/12. Linux system kernel parameter optimization"
 				  echo -e "${gl_lv}One-stop system tuning has been completed${gl_bai}"
 
@@ -16388,7 +16587,7 @@ run_commands_on_servers() {
 		local username=${SERVER_ARRAY[i+3]}
 		local password=${SERVER_ARRAY[i+4]}
 		echo
-		echo -e "${gl_huang}Connect to$name ($hostname)...${gl_bai}"
+		echo -e "${gl_huang}connect to$name ($hostname)...${gl_bai}"
 		# sshpass -p "$password" ssh -o StrictHostKeyChecking=no "$username@$hostname" -p "$port" "$1"
 		sshpass -p "$password" ssh -t -o StrictHostKeyChecking=no "$username@$hostname" -p "$port" "$1"
 	done
@@ -16422,7 +16621,7 @@ while true; do
 	  echo -e "${gl_kjlan}Execute tasks in batches${gl_bai}"
 	  echo -e "${gl_kjlan}11. ${gl_bai}Install technology lion script${gl_kjlan}12. ${gl_bai}Update system${gl_kjlan}13. ${gl_bai}Clean the system"
 	  echo -e "${gl_kjlan}14. ${gl_bai}Install docker${gl_kjlan}15. ${gl_bai}Install BBR3${gl_kjlan}16. ${gl_bai}Set 1G virtual memory"
-	  echo -e "${gl_kjlan}17. ${gl_bai}Set time zone to Shanghai${gl_kjlan}18. ${gl_bai}Open all ports${gl_kjlan}51. ${gl_bai}Custom instructions"
+	  echo -e "${gl_kjlan}17. ${gl_bai}Set time zone to Shanghai${gl_kjlan}18. ${gl_bai}Open all ports${gl_kjlan}51. ${gl_bai}custom directive"
 	  echo -e "${gl_kjlan}------------------------${gl_bai}"
 	  echo -e "${gl_kjlan}0.  ${gl_bai}Return to main menu"
 	  echo -e "${gl_kjlan}------------------------${gl_bai}"
@@ -16539,7 +16738,7 @@ echo "------------------------"
 echo -e "${gl_zi}V.PS 6.9 dollars per month Tokyo Softbank 2 cores 1G memory 20G hard drive 1T traffic per month${gl_bai}"
 echo -e "${gl_bai}URL: https://vps.hosting/cart/tokyo-cloud-kvm-vps/?id=148&?affid=1355&?affid=1355${gl_bai}"
 echo "------------------------"
-echo -e "${gl_kjlan}More popular VPS deals${gl_bai}"
+echo -e "${gl_kjlan}More popular VPS offers${gl_bai}"
 echo -e "${gl_bai}Website: https://kejilion.pro/topvps/${gl_bai}"
 echo "------------------------"
 echo ""
@@ -16778,7 +16977,7 @@ done
 
 
 k_info() {
-send_stats "k command reference examples"
+send_stats "k command reference use case"
 echo "-------------------"
 echo "Video introduction: https://www.bilibili.com/video/BV1ib421E7it?t=0.1"
 echo "The following is a reference use case for the k command:"
