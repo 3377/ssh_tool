@@ -220,7 +220,7 @@ check_disk_space() {
 
 	if [ $available_space_mb -lt $required_space_mb ]; then
 		echo -e "${gl_huang}ヒント：${gl_bai}ディスク容量が足りません!"
-		echo "現在の利用可能なスペース: $((available_space_mb/1024))G"
+		echo "現在利用可能なスペース: $((available_space_mb/1024))G"
 		echo "最低限必要なスペース:${required_gb}G"
 		echo "インストールを続行できません。ディスク容量をクリアして、再試行してください。"
 		send_stats "ディスク容量が足りない"
@@ -888,12 +888,12 @@ open_port() {
 
 		if ! iptables -C INPUT -p udp --dport $port -j ACCEPT 2>/dev/null; then
 			iptables -I INPUT 1 -p udp --dport $port -j ACCEPT
-			echo "ポートがオープンされました$port"
+			echo "ポートがオープンしました$port"
 		fi
 	done
 
 	save_iptables_rules
-	send_stats "ポートがオープンされました"
+	send_stats "ポートがオープンしました"
 }
 
 
@@ -951,12 +951,12 @@ allow_ip() {
 		# 許可ルールを追加する
 		if ! iptables -C INPUT -s $ip -j ACCEPT 2>/dev/null; then
 			iptables -I INPUT 1 -s $ip -j ACCEPT
-			echo "リリース済みIP$ip"
+			echo "リリースされたIP$ip"
 		fi
 	done
 
 	save_iptables_rules
-	send_stats "リリース済みIP"
+	send_stats "リリースされたIP"
 }
 
 block_ip() {
@@ -1234,7 +1234,7 @@ iptables_panel() {
 				  ;;
 
 			  17)
-				  read -e -p "クリアする国コードを入力してください (例: CN、US、JP):" country_code
+				  read -e -p "クリアされた国コードを入力してください (例: CN、US、JP):" country_code
 				  manage_country_rules unblock $country_code
 				  send_stats "澄んだ国$country_codeIP"
 				  ;;
@@ -1528,7 +1528,7 @@ certs_status() {
 	else
 		send_stats "ドメイン名証明書の申請に失敗しました"
 		echo -e "${gl_hong}知らせ：${gl_bai}証明書の申請に失敗しました。次の考えられる理由を確認して、再試行してください。"
-		echo -e "1. ドメイン名のスペルが間違っています ➠ ドメイン名が正しく入力されているか確認してください"
+		echo -e "1. ドメイン名のスペルが間違っています ➠ ドメイン名が正しく入力されているかどうかを確認してください"
 		echo -e "2. DNS 解決の問題 ➠ ドメイン名がサーバー IP に正しく解決されていることを確認します。"
 		echo -e "3. ネットワーク構成の問題 ➠ Cloudflare Warp などの仮想ネットワークを使用している場合は、一時的にシャットダウンしてください"
 		echo -e "4. ファイアウォールの制限 ➠ ポート 80/443 が開いているかどうかを確認し、アクセス可能であることを確認します。"
@@ -2009,7 +2009,7 @@ web_security() {
 			  echo "5. SSH 傍受記録の表示 6. Web サイト傍受記録の表示"
 			  echo "7. 防御ルールのリストを表示します。 8. リアルタイム監視のログを表示します。"
 			  echo "------------------------"
-			  echo "11. インターセプトパラメータを設定します。 12. ブロックされた IP をすべてクリアします。"
+			  echo "11. インターセプトパラメータを設定します。 12. ブロックされているすべての IP をクリアします。"
 			  echo "------------------------"
 			  echo "21. クラウドフレア モード 22. 高負荷時に 5 秒間のシールドを有効にする"
 			  echo "------------------------"
@@ -2749,7 +2749,7 @@ while true; do
 	 case $choice in
 		1)
 			check_disk_space $app_size
-			read -e -p "アプリケーションの外部サービス ポートを入力し、Enter キーを押して、それをデフォルトで使用します。${docker_port}ポート：" app_port
+			read -e -p "アプリケーションの外部サービス ポートを入力し、Enter キーを押してデフォルトで使用します。${docker_port}ポート：" app_port
 			local app_port=${app_port:-${docker_port}}
 			local docker_port=$app_port
 
@@ -2862,7 +2862,7 @@ docker_app_plus() {
 		case $choice in
 			1)
 				check_disk_space $app_size
-				read -e -p "アプリケーションの外部サービス ポートを入力し、Enter キーを押して、それをデフォルトで使用します。${docker_port}ポート：" app_port
+				read -e -p "アプリケーションの外部サービス ポートを入力し、Enter キーを押してデフォルトで使用します。${docker_port}ポート：" app_port
 				local app_port=${app_port:-${docker_port}}
 				local docker_port=$app_port
 				install jq
@@ -3684,7 +3684,7 @@ add_forwarding_service() {
 	send_stats "FRPイントラネットサービスを追加"
 	# ユーザーにサービス名と転送情報の入力を求めるプロンプトを表示します
 	read -e -p "サービス名を入力してください:" service_name
-	read -e -p "転送タイプ (tcp/udp) を入力してください [デフォルトで tcp に入力します]:" service_type
+	read -e -p "転送タイプ (tcp/udp) を入力してください [デフォルトで tcp を入力する]:" service_type
 	local service_type=${service_type:-tcp}
 	read -e -p "イントラネット IP を入力してください [Enter キーを押すときのデフォルトは 127.0.0.1]:" local_ip
 	local local_ip=${local_ip:-127.0.0.1}
@@ -3843,7 +3843,7 @@ generate_access_urls() {
 			done
 		fi
 
-		# HTTPS 構成を処理する
+		# HTTPS 構成の処理
 		for port in "${ports[@]}"; do
 			if [[ $port != "8055" && $port != "8056" ]]; then
 				local frps_search_pattern="${ipv4_address}:${port}"
@@ -3947,7 +3947,7 @@ frps_panel() {
 
 			8)
 				send_stats "IPアクセスをブロックする"
-				echo "ドメイン名アクセスを反転している場合は、この機能を使用して IP+ポート アクセスをブロックすることができ、より安全です。"
+				echo "ドメイン名アクセスを逆にしている場合は、この機能を使用して IP+ポート アクセスをブロックすることができ、より安全になります。"
 				read -e -p "ブロックするポートを入力してください:" frps_port
 				block_host_port "$frps_port" "$ipv4_address"
 				;;
@@ -4354,7 +4354,7 @@ while true; do
 	echo "2.国内DNSの最適化:"
 	echo " v4: 223.5.5.5 183.60.83.19"
 	echo " v6: 2400:3200::1 2400:da00::6666"
-	echo "3. DNS 設定を手動で編集する"
+	echo "3. DNS 構成を手動で編集する"
 	echo "------------------------"
 	echo "0. 前のメニューに戻る"
 	echo "------------------------"
@@ -4470,7 +4470,7 @@ add_sshkey() {
 		   -e 's/^\s*#\?\s*ChallengeResponseAuthentication .*/ChallengeResponseAuthentication no/' /etc/ssh/sshd_config
 	rm -rf /etc/ssh/sshd_config.d/* /etc/ssh/ssh_config.d/*
 	restart_ssh
-	echo -e "${gl_lv}ROOT秘密キーログインがオンになり、ROOTパスワードログインがオフになり、再接続が有効になります${gl_bai}"
+	echo -e "${gl_lv}ROOT 秘密キー ログインがオンになり、ROOT パスワード ログインがオフになり、再接続が有効になります。${gl_bai}"
 
 }
 
@@ -4513,14 +4513,14 @@ sed -i 's/^\s*#\?\s*PermitRootLogin.*/PermitRootLogin yes/g' /etc/ssh/sshd_confi
 sed -i 's/^\s*#\?\s*PasswordAuthentication.*/PasswordAuthentication yes/g' /etc/ssh/sshd_config;
 rm -rf /etc/ssh/sshd_config.d/* /etc/ssh/ssh_config.d/*
 restart_ssh
-echo -e "${gl_lv}ROOTログインの設定が完了しました！${gl_bai}"
+echo -e "${gl_lv}ROOTログインの設定は完了です！${gl_bai}"
 
 }
 
 
 root_use() {
 clear
-[ "$EUID" -ne 0 ] && echo -e "${gl_huang}ヒント：${gl_bai}この機能を実行するには、root ユーザーが必要です。" && break_end && kejilion
+[ "$EUID" -ne 0 ] && echo -e "${gl_huang}ヒント：${gl_bai}この機能を実行するには root ユーザーが必要です。" && break_end && kejilion
 }
 
 
@@ -4729,7 +4729,7 @@ dd_xitong() {
 				;;
 
 			  30)
-				send_stats "centos9を再インストールする"
+				send_stats "CentOS9を再インストールする"
 				dd_xitong_3
 				bash reinstall.sh centos 9
 				reboot
@@ -5061,7 +5061,7 @@ elrepo() {
 		  echo "ビデオ紹介: https://www.bilibili.com/video/BV1mH4y1w7qA?t=529.2"
 		  echo "------------------------------------------------"
 		  echo "Red Hat シリーズのディストリビューション CentOS/RedHat/Alma/Rocky/oracle のみをサポートします"
-		  echo "Linux カーネルをアップグレードすると、システムのパフォーマンスとセキュリティが向上します。可能であれば試してみて、慎重に実稼働環境をアップグレードすることをお勧めします。"
+		  echo "Linux カーネルをアップグレードすると、システムのパフォーマンスとセキュリティが向上します。可能であれば試して、慎重に実稼働環境をアップグレードすることをお勧めします。"
 		  echo "------------------------------------------------"
 		  read -e -p "続行してもよろしいですか? (はい/いいえ):" choice
 
@@ -5361,7 +5361,7 @@ Kernel_optimize() {
 	root_use
 	while true; do
 	  clear
-	  send_stats "Linux カーネルのチューニング管理"
+	  send_stats "Linuxカーネルチューニング管理"
 	  echo "Linuxシステムのカーネルパラメータの最適化"
 	  echo "ビデオ紹介: https://www.bilibili.com/video/BV1Kb421J7yg?t=0.1"
 	  echo "------------------------------------------------"
@@ -5396,7 +5396,7 @@ Kernel_optimize() {
 			  cd ~
 			  clear
 			  optimize_web_server
-			  send_stats "ウェブサイト最適化モデル"
+			  send_stats "ウェブサイト最適化モード"
 			  ;;
 		  4)
 			  cd ~
@@ -5788,7 +5788,7 @@ linux_backup() {
 			3) delete_backup ;;
 			*) break ;;
 		esac
-		read -e -p "続行するには Enter キーを押してください..."
+		read -e -p "Enter を押して続行します..."
 	done
 }
 
@@ -6121,7 +6121,7 @@ disk_manager() {
 	send_stats "ハードディスク管理機能"
 	while true; do
 		clear
-		echo "ハードディスクのパーティション管理"
+		echo "ハードドライブのパーティション管理"
 		echo -e "${gl_huang}この機能は内部テスト中であるため、運用環境では使用しないでください。${gl_bai}"
 		echo "------------------------"
 		list_partitions
@@ -6140,7 +6140,7 @@ disk_manager() {
 			5) check_partition ;;
 			*) break ;;
 		esac
-		read -e -p "続行するには Enter キーを押してください..."
+		read -e -p "Enter を押して続行します..."
 	done
 }
 
@@ -6427,7 +6427,7 @@ rsync_manager() {
 			0) break ;;
 			*) echo "選択が無効です。もう一度お試しください。" ;;
 		esac
-		read -e -p "続行するには Enter キーを押してください..."
+		read -e -p "Enter を押して続行します..."
 	done
 }
 
@@ -6669,7 +6669,7 @@ linux_tools() {
 			  clear
 			  ncdu
 			  cd ~
-			  send_stats "ncduをインストールする"
+			  send_stats "ncdu をインストールする"
 			  ;;
 			14)
 			  clear
@@ -6861,7 +6861,7 @@ linux_docker() {
 	  echo -e "${gl_kjlan}5.   ${gl_bai}Dockerネットワーク管理"
 	  echo -e "${gl_kjlan}6.   ${gl_bai}Docker ボリューム管理"
 	  echo -e "${gl_kjlan}------------------------"
-	  echo -e "${gl_kjlan}7.   ${gl_bai}不要な Docker コンテナをクリーンアップし、ネットワーク データ ボリュームをミラーリングします。"
+	  echo -e "${gl_kjlan}7.   ${gl_bai}不要な Docker コンテナをクリーンアップし、ネットワーク データ ボリュームをミラーリングします"
 	  echo -e "${gl_kjlan}------------------------"
 	  echo -e "${gl_kjlan}8.   ${gl_bai}Dockerソースを変更する"
 	  echo -e "${gl_kjlan}9.   ${gl_bai}daemon.json ファイルを編集する"
@@ -7918,7 +7918,7 @@ linux_ldnmp() {
 			  ;;
 		  2)
 			  echo "データベースのバックアップは、.gz で終わる圧縮パッケージである必要があります。 Pagoda/1panel バックアップ データのインポートをサポートするには、/home/ ディレクトリに配置してください。"
-			  read -e -p "ダウンロード リンクを入力して、バックアップ データをリモートでダウンロードすることもできます。 Enter を直接押して、リモート ダウンロードをスキップします。" url_download_db
+			  read -e -p "ダウンロード リンクを入力してバックアップ データをリモートでダウンロードすることもできます。 Enter を直接押して、リモート ダウンロードをスキップします。" url_download_db
 
 			  cd /home/
 			  if [ -n "$url_download_db" ]; then
@@ -8476,7 +8476,7 @@ linux_panel() {
 
 	  echo -e "${gl_kjlan}1.   ${color1}パゴダパネル正式版${gl_kjlan}2.   ${color2}aaPanel パゴダ国際版"
 	  echo -e "${gl_kjlan}3.   ${color3}1Panel 新世代管理パネル${gl_kjlan}4.   ${color4}NginxProxyManager 視覚化パネル"
-	  echo -e "${gl_kjlan}5.   ${color5}OpenList マルチストア ファイル リスト プログラム${gl_kjlan}6.   ${color6}Ubuntu リモート デスクトップ Web バージョン"
+	  echo -e "${gl_kjlan}5.   ${color5}OpenList マルチストア ファイル リスト プログラム${gl_kjlan}6.   ${color6}Ubuntu リモート デスクトップ Web エディション"
 	  echo -e "${gl_kjlan}7.   ${color7}Nezha Probe VPS 監視パネル${gl_kjlan}8.   ${color8}QBオフラインBT磁気ダウンロードパネル"
 	  echo -e "${gl_kjlan}9.   ${color9}Poste.io メール サーバー プログラム${gl_kjlan}10.  ${color10}RocketChat 複数人オンライン チャット システム"
 	  echo -e "${gl_kjlan}------------------------"
@@ -8506,7 +8506,7 @@ linux_panel() {
 	  echo -e "${gl_kjlan}------------------------"
 	  echo -e "${gl_kjlan}51.  ${color51}PVEオープンチックパネル${gl_kjlan}52.  ${color52}DPanel コンテナ管理パネル"
 	  echo -e "${gl_kjlan}53.  ${color53}llama3チャットAI大型モデル${gl_kjlan}54.  ${color54}AMH ホスト Web サイト構築管理パネル"
-	  echo -e "${gl_kjlan}55.  ${color55}FRPイントラネット浸透（サーバー）${gl_huang}★${gl_bai}	         ${gl_kjlan}56.  ${color56}FRPイントラネット普及（クライアント）${gl_huang}★${gl_bai}"
+	  echo -e "${gl_kjlan}55.  ${color55}FRPイントラネット普及（サーバー）${gl_huang}★${gl_bai}	         ${gl_kjlan}56.  ${color56}FRPイントラネット普及（クライアント）${gl_huang}★${gl_bai}"
 	  echo -e "${gl_kjlan}57.  ${color57}ディープシークチャットAI大型モデル${gl_kjlan}58.  ${color58}Dify 大規模モデルのナレッジ ベース${gl_huang}★${gl_bai}"
 	  echo -e "${gl_kjlan}59.  ${color59}NewAPI 大規模モデル資産管理${gl_kjlan}60.  ${color60}JumpServer オープンソース要塞マシン"
 	  echo -e "${gl_kjlan}------------------------"
@@ -8718,7 +8718,7 @@ linux_panel() {
 				fi
 				echo ""
 				echo "------------------------"
-				echo "1. 使用する"
+				echo "1. 使用方法"
 				echo "------------------------"
 				echo "0. 前のメニューに戻る"
 				echo "------------------------"
@@ -11030,7 +11030,7 @@ linux_Settings() {
 	  echo -e "${gl_kjlan}------------------------"
 	  echo -e "${gl_kjlan}1.   ${gl_bai}スクリプト起動のショートカットキーを設定する${gl_kjlan}2.   ${gl_bai}ログインパスワードを変更する"
 	  echo -e "${gl_kjlan}3.   ${gl_bai}ROOTパスワードログインモード${gl_kjlan}4.   ${gl_bai}指定されたバージョンの Python をインストールします"
-	  echo -e "${gl_kjlan}5.   ${gl_bai}すべてのポートを開く${gl_kjlan}6.   ${gl_bai}SSH接続ポートの変更"
+	  echo -e "${gl_kjlan}5.   ${gl_bai}すべてのポートを開く${gl_kjlan}6.   ${gl_bai}SSH接続ポートを変更する"
 	  echo -e "${gl_kjlan}7.   ${gl_bai}DNSアドレスを最適化する${gl_kjlan}8.   ${gl_bai}ワンクリックでシステムを再インストールします${gl_huang}★${gl_bai}"
 	  echo -e "${gl_kjlan}9.   ${gl_bai}ROOTアカウントを無効にして新しいアカウントを作成する${gl_kjlan}10.  ${gl_bai}スイッチ優先度 ipv4/ipv6"
 	  echo -e "${gl_kjlan}------------------------"
@@ -11932,7 +11932,7 @@ EOF
 
 		  25)
 			  root_use
-			  send_stats "電報警告"
+			  send_stats "電報警報"
 			  echo "TG-bot監視・早期警告機能"
 			  echo "動画紹介：https://youtu.be/vLL-eb3Z_TY"
 			  echo "------------------------------------------------"
@@ -12492,7 +12492,7 @@ run_commands_on_servers() {
 		local username=${SERVER_ARRAY[i+3]}
 		local password=${SERVER_ARRAY[i+4]}
 		echo
-		echo -e "${gl_huang}に接続する$name ($hostname)...${gl_bai}"
+		echo -e "${gl_huang}に接続します$name ($hostname)...${gl_bai}"
 		# sshpass -p "$password" ssh -o StrictHostKeyChecking=no "$username@$hostname" -p "$port" "$1"
 		sshpass -p "$password" ssh -t -o StrictHostKeyChecking=no "$username@$hostname" -p "$port" "$1"
 	done
@@ -12521,7 +12521,7 @@ while true; do
 	  echo -e "${gl_kjlan}------------------------${gl_bai}"
 	  echo -e "${gl_kjlan}サーバーリスト管理${gl_bai}"
 	  echo -e "${gl_kjlan}1.  ${gl_bai}サーバーの追加${gl_kjlan}2.  ${gl_bai}サーバーの削除${gl_kjlan}3.  ${gl_bai}サーバーの編集"
-	  echo -e "${gl_kjlan}4.  ${gl_bai}バックアップクラスタ${gl_kjlan}5.  ${gl_bai}クラスタを復元する"
+	  echo -e "${gl_kjlan}4.  ${gl_bai}バックアップクラスター${gl_kjlan}5.  ${gl_bai}クラスタを復元する"
 	  echo -e "${gl_kjlan}------------------------${gl_bai}"
 	  echo -e "${gl_kjlan}タスクをバッチで実行する${gl_bai}"
 	  echo -e "${gl_kjlan}11. ${gl_bai}テクノロジ ライオン スクリプトをインストールする${gl_kjlan}12. ${gl_bai}システムをアップデートする${gl_kjlan}13. ${gl_bai}システムをクリーンアップする"
@@ -12559,7 +12559,7 @@ while true; do
 
 		  4)
 			  clear
-			  send_stats "バックアップクラスタ"
+			  send_stats "バックアップクラスター"
 			  echo -e "変更してください${gl_huang}/root/cluster/servers.py${gl_bai}ファイルをダウンロードしてバックアップを完了してください。"
 			  break_end
 			  ;;
@@ -12640,7 +12640,7 @@ echo "------------------------"
 echo -e "${gl_lan}DMIT 四半期あたり 28 ドル 米国 CN2GIA 1 コア 2G メモリ 20G ハード ドライブ 1 か月あたり 800G トラフィック${gl_bai}"
 echo -e "${gl_bai}URL: https://www.dmit.io/aff.php?aff=4966&pid=100${gl_bai}"
 echo "------------------------"
-echo -e "${gl_zi}V.PS 月額 6.9 ドル 東京ソフトバンク 2 コア 1G メモリ 20G ハードドライブ 月額 1T トラフィック${gl_bai}"
+echo -e "${gl_zi}V.PS 月額 6.9 ドル 東京ソフトバンク 2 コア 1G メモリ 20G ハードドライブ 月額トラフィック 1T${gl_bai}"
 echo -e "${gl_bai}URL：https://vps.hosting/cart/tokyo-cloud-kvm-vps/?id=148&?affid=1355&?affid=1355${gl_bai}"
 echo "------------------------"
 echo -e "${gl_kjlan}さらに人気のある VPS オファー${gl_bai}"
@@ -12844,7 +12844,7 @@ echo "仮想メモリ k スワップを設定 2048"
 echo "仮想タイムゾーンを設定します k 時間 アジア/上海 | k タイムゾーン アジア/上海"
 echo "システムごみ箱のゴミ箱 | k hz | k ごみ箱"
 echo "システムバックアップ機能 kバックアップ | k bf | k バックアップ"
-echo "ssh リモート接続ツール k ssh | k リモート接続"
+echo "ssh リモート接続ツール k ssh | kリモート接続"
 echo "rsync リモート同期ツール k rsync | k リモート同期"
 echo "ハードディスク管理ツール k ディスク | k ハードディスクの管理"
 echo "イントラネット普及率 (サーバー) k frps"
@@ -12862,10 +12862,10 @@ echo "docker イメージ管理 k docker img |k docker image"
 echo "LDNMP サイト管理 k Web"
 echo "LDNMP キャッシュのクリーニング k Web キャッシュ"
 echo "WordPress をインストールします。 kワードプレス | k wp xxx.com"
-echo "リバース プロキシをインストールします k fd |k rp |k リバース プロキシ |k fd xxx.com"
+echo "リバース プロキシ k fd |k rp |k リバース プロキシ |k fd xxx.com をインストールします。"
 echo "ロード バランシングのインストール k ロード バランシング |k ロード バランシング"
 echo "ファイアウォール パネル k fhq |k ファイアウォール"
-echo "ポートを開きます k dkdk 8080 |k ポートを開きます 8080"
+echo "ポートを開く k dkdk 8080 |k ポートを開く 8080"
 echo "ポート k gbdk 7800 を閉じる |k ポート 7800 を閉じる"
 echo "リリース IP k fxip 127.0.0.0/8 |k リリース IP 127.0.0.0/8"
 echo "ブロック IP k zzip 177.5.25.36 |k ブロック IP 177.5.25.36"

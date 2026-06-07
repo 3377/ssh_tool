@@ -1058,7 +1058,7 @@ manage_country_rules() {
 			;;
 
 		allow)
-			# 为允许的国家创建 ipset（如果不存在）
+			# 為允許的國家建立 ipset（如果不存在）
 			if ! ipset list "$ipset_name" &> /dev/null; then
 				ipset create "$ipset_name" hash:net
 			fi
@@ -1069,7 +1069,7 @@ manage_country_rules() {
 				exit 1
 			fi
 
-			# 删除现有的国家规则
+			# 刪除現有的國家規則
 			iptables -D INPUT -m set --match-set "$ipset_name" src -j DROP 2>/dev/null
 			iptables -D OUTPUT -m set --match-set "$ipset_name" dst -j DROP 2>/dev/null
 			ipset flush "$ipset_name"
@@ -1223,7 +1223,7 @@ iptables_panel() {
 				  ;;
 
 			  15)
-				  read -e -p "請輸入阻止的國家代碼（如 CN, US, JP）:" country_code
+				  read -e -p "请输入阻止的国家代码（如 CN, US, JP）: " country_code
 				  manage_country_rules block $country_code
 				  send_stats "允許國家$country_code的IP"
 				  ;;
@@ -1257,7 +1257,7 @@ iptables_panel() {
 add_swap() {
 	local new_swap=$1  # 获取传入的参数
 
-	# 取得目前系統中所有的 swap 分割區
+	# 取得目前系統中所有的 swap 分區
 	local swap_partitions=$(grep -E '^/dev/' /proc/swaps | awk '{print $1}')
 
 	# 遍歷並刪除所有的 swap 分割區
@@ -1485,7 +1485,7 @@ ssl_ps
 
 ssl_ps() {
 	echo -e "${gl_huang}已申請的證書到期情況${gl_bai}"
-	echo "站點資訊 證書到期時間"
+	echo "網站資訊 證書到期時間"
 	echo "------------------------"
 	for cert_dir in /etc/letsencrypt/live/*; do
 	  local cert_file="$cert_dir/fullchain.pem"
@@ -1524,7 +1524,7 @@ certs_status() {
 
 	local file_path="/etc/letsencrypt/live/$yuming/fullchain.pem"
 	if [ -f "$file_path" ]; then
-		send_stats "域名证书申请成功"
+		send_stats "網域證書申請成功"
 	else
 		send_stats "網域證書申請失敗"
 		echo -e "${gl_hong}注意:${gl_bai}證書申請失敗，請檢查以下可能原因並重試："
@@ -2456,7 +2456,7 @@ check_docker_image_update() {
 		local container_created_ts=$(date -d "$container_created" +%s 2>/dev/null)
 		local last_updated_ts=$(date -d "$last_updated" +%s 2>/dev/null)
 
-		# 比较时间戳
+		# 比較時間戳
 		if [[ $container_created_ts -lt $last_updated_ts ]]; then
 			update_status="${gl_huang}发现新版本!${gl_bai}"
 		else
@@ -3301,7 +3301,7 @@ ldnmp_Proxy_backend() {
 		add_yuming
 	fi
 
-	# 获取用户输入的多个IP:端口（用空格分隔）
+	# 取得用戶輸入的多個IP:連接埠（以空格分隔）
 	if [ -z "$reverseproxy_port" ]; then
 		read -e -p "請輸入你的多個反代IP+埠以空格隔開（例如 127.0.0.1:3000 127.0.0.1:3002）：" reverseproxy_port
 	fi
@@ -3417,7 +3417,7 @@ ldnmp_web_status() {
 				send_stats "更換站點域名"
 				echo -e "${gl_hong}強烈建議:${gl_bai}先備份好全站資料再更換站點網域！"
 				read -e -p "請輸入舊網域名稱:" oddyuming
-				read -e -p "請輸入新網域:" yuming
+				read -e -p "請輸入新網域名稱:" yuming
 				install_certbot
 				install_ssltls
 				certs_status
@@ -3464,7 +3464,7 @@ ldnmp_web_status() {
 				send_stats "建立關聯站點"
 				echo -e "為現有的站點再關聯一個新網域用於訪問"
 				read -e -p "請輸入現有的網域名稱:" oddyuming
-				read -e -p "請輸入新網域:" yuming
+				read -e -p "請輸入新網域名稱:" yuming
 				install_certbot
 				install_ssltls
 				certs_status
@@ -3702,7 +3702,7 @@ remote_port = ${remote_port}
 EOF
 
 	# 輸出產生的信息
-	echo "服務$service_name已成功加入到 frpc.toml"
+	echo "服務$service_name已成功加入 frpc.toml"
 
 	docker restart frpc
 
@@ -4068,7 +4068,7 @@ yt_menu_pro() {
 		send_stats "yt-dlp 下載工具"
 		echo -e "yt-dlp $YTDLP_STATUS"
 		echo -e "yt-dlp 是一個功能強大的影片下載工具，支援 YouTube、Bilibili、Twitter 等數千網站。"
-		echo -e "官網網址：https://github.com/yt-dlp/yt-dlp"
+		echo -e "官网地址：https://github.com/yt-dlp/yt-dlp"
 		echo "-------------------------"
 		echo "已下載影片清單:"
 		ls -td "$VIDEO_DIR"/*/ 2>/dev/null || echo "（暫無）"
@@ -4571,7 +4571,7 @@ dd_xitong() {
 			echo "重裝系統"
 			echo "--------------------------------"
 			echo -e "${gl_hong}注意:${gl_bai}重裝有風險失聯，不放心者慎用。重裝預計花費15分鐘，請提前備份資料。"
-			echo -e "${gl_hui}感謝MollyLau大佬和bin456789大佬的腳本支持！${gl_bai} "
+			echo -e "${gl_hui}感谢MollyLau大佬和bin456789大佬的脚本支持！${gl_bai} "
 			echo "------------------------"
 			echo "1. Debian 12                  2. Debian 11"
 			echo "3. Debian 10                  4. Debian 9"
@@ -5127,7 +5127,7 @@ clamav_scan() {
 		clamav/clamav-debian:latest \
 		clamscan -r --log=/var/log/clamav/scan.log $SCAN_PARAMS
 
-	echo -e "${gl_lv}$@ 掃描完成，病毒報告存放在${gl_huang}/home/docker/clamav/log/scan.log${gl_bai}"
+	echo -e "${gl_lv}$@ 扫描完成，病毒报告存放在${gl_huang}/home/docker/clamav/log/scan.log${gl_bai}"
 	echo -e "${gl_lv}如果有病毒請在${gl_huang}scan.log${gl_lv}文件中搜尋FOUND關鍵字確認病毒位置${gl_bai}"
 
 }
@@ -5608,7 +5608,7 @@ linux_trash() {
 	ls -l --color=auto "$TRASH_DIR" 2>/dev/null || echo "回收站為空"
 	echo "------------------------"
 	echo "1. 啟用回收站 2. 關閉回收站"
-	echo "3. 還原內容 4. 清空回收站"
+	echo "3. 还原内容            4. 清空回收站"
 	echo "------------------------"
 	echo "0. 返回上一級選單"
 	echo "------------------------"
@@ -5839,7 +5839,7 @@ add_connection() {
 			echo "請貼上金鑰內容 (貼上完成後按兩次回車)："
 			local password_or_key=""
 			while IFS= read -r line; do
-				# 如果輸入為空白行且金鑰內容已經包含了開頭，則結束輸入
+				# 如果输入为空行且密钥内容已经包含了开头，则结束输入
 				if [[ -z "$line" && "$password_or_key" == *"-----BEGIN"* ]]; then
 					break
 				fi
@@ -8198,7 +8198,7 @@ linux_ldnmp() {
 	33)
 	  clear
 	  send_stats "定時遠端備份"
-	  read -e -p "輸入遠端伺服器IP:" useip
+	  read -e -p "输入远程服务器IP: " useip
 	  read -e -p "輸入遠端伺服器密碼:" usepasswd
 
 	  cd ~
@@ -9869,7 +9869,7 @@ linux_panel() {
 				ip_address
 				echo "已經安裝完成"
 				check_docker_app_ip
-				echo "初始使用者名稱密碼均為: admin"
+				echo "初始使用者名稱密碼皆為: admin"
 			}
 
 			docker_app_update() {
@@ -11041,7 +11041,7 @@ linux_Settings() {
 	  echo -e "${gl_kjlan}19.  ${gl_bai}切換系統更新來源${gl_kjlan}20.  ${gl_bai}定時任務管理"
 	  echo -e "${gl_kjlan}------------------------"
 	  echo -e "${gl_kjlan}21.  ${gl_bai}本機host解析${gl_kjlan}22.  ${gl_bai}SSH防禦程序"
-	  echo -e "${gl_kjlan}23.  ${gl_bai}限流自動關機${gl_kjlan}24.  ${gl_bai}ROOT私鑰登入模式"
+	  echo -e "${gl_kjlan}23.  ${gl_bai}限流自動關機${gl_kjlan}24.  ${gl_bai}ROOT私钥登录模式"
 	  echo -e "${gl_kjlan}25.  ${gl_bai}TG-bot系統監控預警${gl_kjlan}26.  ${gl_bai}修復OpenSSH高風險漏洞"
 	  echo -e "${gl_kjlan}27.  ${gl_bai}紅帽系Linux核心升級${gl_kjlan}28.  ${gl_bai}Linux系統核心參數優化${gl_huang}★${gl_bai}"
 	  echo -e "${gl_kjlan}29.  ${gl_bai}病毒掃描工具${gl_huang}★${gl_bai}                     ${gl_kjlan}30.  ${gl_bai}文件管理器"
@@ -11388,7 +11388,7 @@ EOF
 					   # 提示使用者輸入新使用者名稱
 					   read -e -p "請輸入新用戶名:" new_username
 
-					   # 建立新用戶並設定密碼
+					   # 创建新用户并设置密码
 					   useradd -m -s /bin/bash "$new_username"
 					   passwd "$new_username"
 
@@ -11936,7 +11936,7 @@ EOF
 			  echo "TG-bot監控預警功能"
 			  echo "影片介紹: https://youtu.be/vLL-eb3Z_TY"
 			  echo "------------------------------------------------"
-			  echo "您需要設定tg機器人API和接收預警的用戶ID，即可實現本機CPU，內存，硬碟，流量，SSH登入的即時監控預警"
+			  echo "您需要設定tg機器人API和接收預警的使用者ID，即可實現本機CPU，內存，硬碟，流量，SSH登入的即時監控預警"
 			  echo "到達閾值後會向用戶發送預警訊息"
 			  echo -e "${gl_hui}-關於流量，重啟伺服器將重新計算-${gl_bai}"
 			  read -e -p "確定繼續嗎？ (Y/N):" choice
@@ -12059,7 +12059,7 @@ EOF
 		  41)
 			clear
 			send_stats "留言板"
-			echo "科技lion留言板已迁移至官方社区！请在官方社区进行留言噢！"
+			echo "科技lion留言板已遷移至官方社群！請在官方社群進行留言噢！"
 			echo "https://bbs.kejilion.pro/"
 			  ;;
 
@@ -12274,7 +12274,7 @@ linux_file() {
 		echo "1. 進入目錄 2. 建立目錄 3. 修改目錄權限 4. 重新命名目錄"
 		echo "5. 刪除目錄 6. 返回上一層選單目錄"
 		echo "------------------------"
-		echo "11. 建立文件 12. 編輯文件 13. 修改文件權限 14. 重新命名文件"
+		echo "11. 建立檔案 12. 編輯檔案 13. 修改檔案權限 14. 重新命名文件"
 		echo "15. 刪除文件"
 		echo "------------------------"
 		echo "21. 壓縮檔案目錄 22. 解壓縮檔案目錄 23. 行動檔案目錄 24. 複製檔案目錄"
