@@ -1717,7 +1717,7 @@ web_del() {
 		rm /home/web/certs/${yuming}_key.pem > /dev/null 2>&1
 		rm /home/web/certs/${yuming}_cert.pem > /dev/null 2>&1
 
-		# Convert domain name to database name
+		# 将域名转换为数据库名
 		dbname=$(echo "$yuming" | sed -e 's/[^A-Za-z0-9]/_/g')
 		dbrootpasswd=$(grep -oP 'MYSQL_ROOT_PASSWORD:\s*\K.*' /home/web/docker-compose.yml | tr -d '[:space:]')
 
@@ -1886,7 +1886,7 @@ nginx_br() {
 		}' /home/web/nginx.conf
 
 	else
-		echo "Invalid argument: use 'on' or 'off'"
+		echo "无效的参数：使用 'on' 或 'off'"
 		return 1
 	fi
 
@@ -2122,7 +2122,7 @@ web_security() {
 					  echo -e "${gl_huang}The website automatically detects every 5 minutes. When it detects high load, it will automatically open the shield, and when it detects low load, it will automatically close the shield for 5 seconds.${gl_bai}"
 					  echo "--------------"
 					  echo "Get CF parameters:"
-					  echo -e "Go to my profile in the upper right corner of the cf backend, select the API token on the left, and obtain${gl_huang}Global API Key${gl_bai}"
+					  echo -e "Go to my profile in the upper right corner of the cf backend, select the API token on the left, and get${gl_huang}Global API Key${gl_bai}"
 					  echo -e "Go to the bottom right of the cf backend domain name summary page to get it${gl_huang}Area ID${gl_bai}"
 					  echo "https://dash.cloudflare.com/login"
 					  echo "--------------"
@@ -4230,7 +4230,7 @@ linux_update() {
 
 
 linux_clean() {
-	echo -e "${gl_huang}System cleaning in progress...${gl_bai}"
+	echo -e "${gl_huang}正在系统清理...${gl_bai}"
 	if command -v dnf &>/dev/null; then
 		rpm --rebuilddb
 		dnf autoremove -y
@@ -4265,7 +4265,7 @@ linux_clean() {
 		rm -rf /var/log/*
 		echo "Delete APK cache..."
 		rm -rf /var/cache/apk/*
-		echo "Delete temporary files..."
+		echo "删除临时文件..."
 		rm -rf /tmp/*
 
 	elif command -v pacman &>/dev/null; then
@@ -4293,7 +4293,7 @@ linux_clean() {
 		pkg autoremove -y
 		echo "Clean package manager cache..."
 		pkg clean -y
-		echo "Delete system log..."
+		echo "删除系统日志..."
 		rm -rf /var/log/*
 		echo "Delete temporary files..."
 		rm -rf /tmp/*
@@ -4408,7 +4408,7 @@ correct_ssh_config() {
 		sed -i 's/^\s*#\?\s*PasswordAuthentication.*/PasswordAuthentication yes/g' "$sshd_config"
 	fi
 
-	# If found PubkeyAuthentication is set to yes
+	# 如果找到 PubkeyAuthentication 设置为 yes
 	if grep -Eq "^PubkeyAuthentication\s+yes" "$sshd_config"; then
 		sed -i -e 's/^\s*#\?\s*PermitRootLogin .*/PermitRootLogin prohibit-password/' \
 			   -e 's/^\s*#\?\s*PasswordAuthentication .*/PasswordAuthentication no/' \
@@ -4470,17 +4470,17 @@ add_sshkey() {
 		   -e 's/^\s*#\?\s*ChallengeResponseAuthentication .*/ChallengeResponseAuthentication no/' /etc/ssh/sshd_config
 	rm -rf /etc/ssh/sshd_config.d/* /etc/ssh/ssh_config.d/*
 	restart_ssh
-	echo -e "${gl_lv}ROOT private key login has been turned on, ROOT password login has been turned off, reconnection will take effect${gl_bai}"
+	echo -e "${gl_lv}ROOT private key login has been turned on, ROOT password login has been turned off, and reconnection will take effect.${gl_bai}"
 
 }
 
 
 import_sshkey() {
 
-	read -e -p "Please enter the contents of your SSH public key (usually starts with 'ssh-rsa' or 'ssh-ed25519'):" public_key
+	read -e -p "请输入您的SSH公钥内容（通常以 'ssh-rsa' 或 'ssh-ed25519' 开头）: " public_key
 
 	if [[ -z "$public_key" ]]; then
-		echo -e "${gl_hong}Error: Public key content not entered.${gl_bai}"
+		echo -e "${gl_hong}错误：未输入公钥内容。${gl_bai}"
 		return 1
 	fi
 
@@ -4568,7 +4568,7 @@ dd_xitong() {
 
 		  while true; do
 			root_use
-			echo "Reinstall the system"
+			echo "重装系统"
 			echo "--------------------------------"
 			echo -e "${gl_hong}Notice:${gl_bai}Reinstalling may cause loss of connection, so use with caution if you are worried. Reinstallation is expected to take 15 minutes, please back up your data in advance."
 			echo -e "${gl_hui}Thanks to MollyLau and bin456789 for their script support!${gl_bai} "
@@ -4786,7 +4786,7 @@ dd_xitong() {
 
 
 			  41)
-				send_stats "Reinstall Windows 11"
+				send_stats "Reinstall windows 11"
 				dd_xitong_2
 				bash InstallNET.sh -windows 11 -lang "cn"
 				reboot
@@ -4927,7 +4927,7 @@ bbrv3() {
 			if [ -r /etc/os-release ]; then
 				. /etc/os-release
 				if [ "$ID" != "debian" ] && [ "$ID" != "ubuntu" ]; then
-					echo "The current environment does not support it. Only Debian and Ubuntu systems are supported."
+					echo "The current environment does not support it, only Debian and Ubuntu systems are supported."
 					break_end
 					linux_Settings
 				fi
@@ -4979,7 +4979,7 @@ elrepo_install() {
 	# Check system version
 	local os_version=$(rpm -q --qf "%{VERSION}" $(rpm -qf /etc/os-release) 2>/dev/null | awk -F '.' '{print $1}')
 	local os_name=$(awk -F= '/^NAME/{print $2}' /etc/os-release)
-	# Make sure we're running on a supported operating system
+	# 确保我们在一个支持的操作系统上运行
 	if [[ "$os_name" != *"Red Hat"* && "$os_name" != *"AlmaLinux"* && "$os_name" != *"Rocky"* && "$os_name" != *"Oracle"* && "$os_name" != *"CentOS"* ]]; then
 		echo "Unsupported operating systems:$os_name"
 		break_end
@@ -4992,7 +4992,7 @@ elrepo_install() {
 		echo "Installing the ELRepo repository configuration (version 8)..."
 		yum -y install https://www.elrepo.org/elrepo-release-8.el8.elrepo.noarch.rpm
 	elif [[ "$os_version" == 9 ]]; then
-		echo "Installing the ELRepo repository configuration (version 9)..."
+		echo "安装 ELRepo 仓库配置 (版本 9)..."
 		yum -y install https://www.elrepo.org/elrepo-release-9.el9.elrepo.noarch.rpm
 	elif [[ "$os_version" == 10 ]]; then
 		echo "Installing the ELRepo repository configuration (version 10)..."
@@ -5025,7 +5025,7 @@ elrepo() {
 				  echo ""
 				  echo "Kernel management"
 				  echo "------------------------"
-				  echo "1. Update elrepo kernel 2. Uninstall elrepo kernel"
+				  echo "1. 更新elrepo内核              2. 卸载elrepo内核"
 				  echo "------------------------"
 				  echo "0. Return to the previous menu"
 				  echo "------------------------"
@@ -5076,7 +5076,7 @@ elrepo() {
 			  echo "Canceled"
 			  ;;
 			*)
-			  echo "Invalid selection, please enter Y or N."
+			  echo "无效的选择，请输入 Y 或 N。"
 			  ;;
 		  esac
 		fi
@@ -5128,7 +5128,7 @@ clamav_scan() {
 		clamscan -r --log=/var/log/clamav/scan.log $SCAN_PARAMS
 
 	echo -e "${gl_lv}$@ The scan is completed and the virus report is stored in${gl_huang}/home/docker/clamav/log/scan.log${gl_bai}"
-	echo -e "${gl_lv}If there is a virus please${gl_huang}scan.log${gl_lv}Search the file for the FOUND keyword to confirm the location of the virus${gl_bai}"
+	echo -e "${gl_lv}如果有病毒请在${gl_huang}scan.log${gl_lv}文件中搜索FOUND关键字确认病毒位置 ${gl_bai}"
 
 }
 
@@ -5149,7 +5149,7 @@ clamav() {
 				echo "It is an open source antivirus software tool mainly used to detect and remove various types of malware."
 				echo "Includes viruses, Trojan horses, spyware, malicious scripts and other harmful software."
 				echo "------------------------"
-				echo -e "${gl_lv}1. Full scan${gl_bai}             ${gl_huang}2. Scan important directories${gl_bai}            ${gl_kjlan}3. Custom directory scanning${gl_bai}"
+				echo -e "${gl_lv}1. Full scan${gl_bai}             ${gl_huang}2. Scan important directories${gl_bai}            ${gl_kjlan} 3. 自定义目录扫描 ${gl_bai}"
 				echo "------------------------"
 				echo "0. Return to the previous menu"
 				echo "------------------------"
@@ -5165,7 +5165,7 @@ clamav() {
 
 						;;
 					2)
-					  send_stats "Important directory scan"
+					  send_stats "重要目录扫描"
 					  install_docker
 					  docker volume create clam_db > /dev/null 2>&1
 					  clamav_freshclam
@@ -5193,12 +5193,12 @@ clamav() {
 
 # High performance mode optimization function
 optimize_high_performance() {
-	echo -e "${gl_lv}switch to${tiaoyou_moshi}...${gl_bai}"
+	echo -e "${gl_lv}切换到${tiaoyou_moshi}...${gl_bai}"
 
 	echo -e "${gl_lv}Optimize file descriptors...${gl_bai}"
 	ulimit -n 65535
 
-	echo -e "${gl_lv}Optimize virtual memory...${gl_bai}"
+	echo -e "${gl_lv}优化虚拟内存...${gl_bai}"
 	sysctl -w vm.swappiness=10 2>/dev/null
 	sysctl -w vm.dirty_ratio=15 2>/dev/null
 	sysctl -w vm.dirty_background_ratio=5 2>/dev/null
@@ -5217,7 +5217,7 @@ optimize_high_performance() {
 	sysctl -w net.ipv4.tcp_tw_reuse=1 2>/dev/null
 	sysctl -w net.ipv4.ip_local_port_range='1024 65535' 2>/dev/null
 
-	echo -e "${gl_lv}Optimize cache management...${gl_bai}"
+	echo -e "${gl_lv}优化缓存管理...${gl_bai}"
 	sysctl -w vm.vfs_cache_pressure=50 2>/dev/null
 
 	echo -e "${gl_lv}Optimize CPU settings...${gl_bai}"
@@ -5226,7 +5226,7 @@ optimize_high_performance() {
 	echo -e "${gl_lv}Other optimizations...${gl_bai}"
 	# Disable transparent huge pages to reduce latency
 	echo never > /sys/kernel/mm/transparent_hugepage/enabled
-	# Disable NUMA balancing
+	# 禁用 NUMA balancing
 	sysctl -w kernel.numa_balancing=0 2>/dev/null
 
 
@@ -5258,14 +5258,14 @@ optimize_balanced() {
 	sysctl -w net.ipv4.tcp_tw_reuse=1 2>/dev/null
 	sysctl -w net.ipv4.ip_local_port_range='1024 49151' 2>/dev/null
 
-	echo -e "${gl_lv}Optimize cache management...${gl_bai}"
+	echo -e "${gl_lv}优化缓存管理...${gl_bai}"
 	sysctl -w vm.vfs_cache_pressure=75 2>/dev/null
 
 	echo -e "${gl_lv}Optimize CPU settings...${gl_bai}"
 	sysctl -w kernel.sched_autogroup_enabled=1 2>/dev/null
 
 	echo -e "${gl_lv}Other optimizations...${gl_bai}"
-	# Restore transparent huge pages
+	# 还原透明大页面
 	echo always > /sys/kernel/mm/transparent_hugepage/enabled
 	# Restore NUMA balancing
 	sysctl -w kernel.numa_balancing=1 2>/dev/null
@@ -5273,7 +5273,7 @@ optimize_balanced() {
 
 }
 
-# Restore default settings function
+# 还原默认设置函数
 restore_defaults() {
 	echo -e "${gl_lv}Revert to default settings...${gl_bai}"
 
@@ -5315,9 +5315,9 @@ restore_defaults() {
 
 
 
-# Website building optimization function
+# 网站搭建优化函数
 optimize_web_server() {
-	echo -e "${gl_lv}Switch to website construction optimization mode...${gl_bai}"
+	echo -e "${gl_lv}切换到网站搭建优化模式...${gl_bai}"
 
 	echo -e "${gl_lv}Optimize file descriptors...${gl_bai}"
 	ulimit -n 65535
@@ -5344,10 +5344,10 @@ optimize_web_server() {
 	echo -e "${gl_lv}Optimize cache management...${gl_bai}"
 	sysctl -w vm.vfs_cache_pressure=50 2>/dev/null
 
-	echo -e "${gl_lv}Optimize CPU settings...${gl_bai}"
+	echo -e "${gl_lv}优化CPU设置...${gl_bai}"
 	sysctl -w kernel.sched_autogroup_enabled=0 2>/dev/null
 
-	echo -e "${gl_lv}Other optimizations...${gl_bai}"
+	echo -e "${gl_lv}其他优化...${gl_bai}"
 	# Disable transparent huge pages to reduce latency
 	echo never > /sys/kernel/mm/transparent_hugepage/enabled
 	# Disable NUMA balancing
@@ -5366,12 +5366,12 @@ Kernel_optimize() {
 	  echo "Video introduction: https://www.bilibili.com/video/BV1Kb421J7yg?t=0.1"
 	  echo "------------------------------------------------"
 	  echo "Provides a variety of system parameter tuning modes, and users can choose to switch according to their own usage scenarios."
-	  echo -e "${gl_huang}hint:${gl_bai}Please use it with caution in production environment!"
+	  echo -e "${gl_huang}hint:${gl_bai}生产环境请谨慎使用！"
 	  echo "--------------------"
 	  echo "1. High-performance optimization mode: Maximize system performance and optimize file descriptors, virtual memory, network settings, cache management and CPU settings."
 	  echo "2. Balanced optimization mode: strikes a balance between performance and resource consumption, suitable for daily use."
-	  echo "3. Website optimization mode: Optimize the website server to improve concurrent connection processing capabilities, response speed and overall performance."
-	  echo "4. Live broadcast optimization mode: Optimize the special needs of live streaming to reduce delays and improve transmission performance."
+	  echo "3. 网站优化模式：       针对网站服务器进行优化，提高并发连接处理能力、响应速度和整体性能。"
+	  echo "4. 直播优化模式：       针对直播推流的特殊需求进行优化，减少延迟，提高传输性能。"
 	  echo "5. Game server optimization mode: Optimize the game server to improve concurrent processing capabilities and response speed."
 	  echo "6. Restore default settings: Restore system settings to default configuration."
 	  echo "--------------------"
@@ -5457,7 +5457,7 @@ update_locale() {
 				break_end
 				;;
 			*)
-				echo "Unsupported systems:$ID"
+				echo "不支持的系统: $ID"
 				break_end
 				;;
 		esac
@@ -5481,7 +5481,7 @@ while true; do
   echo "------------------------"
   echo "0. Return to the previous menu"
   echo "------------------------"
-  read -e -p "Enter your selection:" choice
+  read -e -p "输入你的选择: " choice
 
   case $choice in
 	  1)
@@ -5516,7 +5516,7 @@ else
 	echo "${bianse}" >> ~/.profile
 	# source ~/.profile
 fi
-echo -e "${gl_lv}Change completed. Reconnect to SSH to see the changes!${gl_bai}"
+echo -e "${gl_lv}变更完成。重新连接SSH后可查看变化！${gl_bai}"
 
 hash -r
 break_end
@@ -5527,7 +5527,7 @@ break_end
 
 shell_bianse() {
   root_use
-  send_stats "Command line beautification tool"
+  send_stats "命令行美化工具"
   while true; do
 	clear
 	echo "Command line beautification tool"
@@ -5635,7 +5635,7 @@ linux_trash() {
 		read -e -p "Enter the file name to be restored:" file_to_restore
 		if [ -e "$TRASH_DIR/$file_to_restore" ]; then
 		  mv "$TRASH_DIR/$file_to_restore" "$HOME/"
-		  echo "$file_to_restoreRestored to home directory."
+		  echo "$file_to_restore 已还原到主目录。"
 		else
 		  echo "File does not exist."
 		fi
@@ -5663,9 +5663,9 @@ create_backup() {
 
 	# Prompt user for backup directory
 	echo "Example of creating a backup:"
-	echo "- Back up a single directory: /var/www"
-	echo "- Back up multiple directories: /etc /home /var/log"
-	echo "- Press Enter to use the default directory (/etc /usr /home)"
+	echo "  - 备份单个目录: /var/www"
+	echo "  - 备份多个目录: /etc /home /var/log"
+	echo "  - 直接回车将使用默认目录 (/etc /usr /home)"
 	read -r -p "Please enter the directory to be backed up (separate multiple directories with spaces, and press Enter to use the default directory):" input
 
 	# If the user does not enter a directory, the default directory is used
@@ -5680,7 +5680,7 @@ create_backup() {
 		IFS=' ' read -r -a BACKUP_PATHS <<< "$input"
 	fi
 
-	# Generate backup file prefix
+	# 生成备份文件前缀
 	local PREFIX=""
 	for path in "${BACKUP_PATHS[@]}"; do
 		# Extract directory name and remove slashes
@@ -5694,7 +5694,7 @@ create_backup() {
 	# Generate backup file name
 	local BACKUP_NAME="${PREFIX}_$TIMESTAMP.tar.gz"
 
-	# Print directory selected by user
+	# 打印用户选择的目录
 	echo "The backup directory you selected is:"
 	for path in "${BACKUP_PATHS[@]}"; do
 		echo "- $path"
@@ -5717,7 +5717,7 @@ create_backup() {
 # Restore backup
 restore_backup() {
 	send_stats "Restore backup"
-	# Select the backup to restore
+	# 选择要恢复的备份
 	read -e -p "Please enter the backup file name to be restored:" BACKUP_NAME
 
 	# Check if the backup file exists
@@ -5726,18 +5726,18 @@ restore_backup() {
 		exit 1
 	fi
 
-	echo "Restoring backup$BACKUP_NAME..."
+	echo "正在恢复备份 $BACKUP_NAME..."
 	tar -xzvf "$BACKUP_DIR/$BACKUP_NAME" -C /
 
 	if [ $? -eq 0 ]; then
 		echo "Backup and restore successful!"
 	else
-		echo "Backup restore failed!"
+		echo "备份恢复失败！"
 		exit 1
 	fi
 }
 
-# List backups
+# 列出备份
 list_backups() {
 	echo "Available backups:"
 	ls -1 "$BACKUP_DIR"
@@ -5745,9 +5745,9 @@ list_backups() {
 
 # Delete backup
 delete_backup() {
-	send_stats "Delete backup"
+	send_stats "删除备份"
 
-	read -e -p "Please enter the backup file name to be deleted:" BACKUP_NAME
+	read -e -p "请输入要删除的备份文件名: " BACKUP_NAME
 
 	# Check if the backup file exists
 	if [ ! -f "$BACKUP_DIR/$BACKUP_NAME" ]; then
@@ -5761,7 +5761,7 @@ delete_backup() {
 	if [ $? -eq 0 ]; then
 		echo "Backup deleted successfully!"
 	else
-		echo "Backup deletion failed!"
+		echo "备份删除失败！"
 		exit 1
 	fi
 }
@@ -5777,7 +5777,7 @@ linux_backup() {
 		echo "------------------------"
 		list_backups
 		echo "------------------------"
-		echo "1. Create backup 2. Restore backup 3. Delete backup"
+		echo "1. 创建备份        2. 恢复备份        3. 删除备份"
 		echo "------------------------"
 		echo "0. Return to the previous menu"
 		echo "------------------------"
@@ -6369,7 +6369,7 @@ schedule_task() {
 		return
 	fi
 
-	# Create to user's crontab
+	# 创建到用户的 crontab
 	(crontab -l 2>/dev/null; echo "$cron_job") | crontab -
 	echo "Scheduled task has been created:$cron_job"
 }
@@ -7255,7 +7255,7 @@ linux_test() {
 
 		  21)
 			  clear
-			  send_stats "yabs performance test"
+			  send_stats "yabs性能测试"
 			  check_swap
 			  curl -sL yabs.sh | bash -s -- -i -5
 			  ;;
@@ -8476,7 +8476,7 @@ linux_panel() {
 
 	  echo -e "${gl_kjlan}1.   ${color1}Pagoda panel official version${gl_kjlan}2.   ${color2}aaPanel Pagoda International Version"
 	  echo -e "${gl_kjlan}3.   ${color3}1Panel new generation management panel${gl_kjlan}4.   ${color4}NginxProxyManager visualization panel"
-	  echo -e "${gl_kjlan}5.   ${color5}OpenList multi-store file list program${gl_kjlan}6.   ${color6}Ubuntu Remote Desktop Web Edition"
+	  echo -e "${gl_kjlan}5.   ${color5}OpenList multi-store file list program${gl_kjlan}6.   ${color6}Ubuntu Remote Desktop Web Version"
 	  echo -e "${gl_kjlan}7.   ${color7}Nezha Probe VPS Monitoring Panel${gl_kjlan}8.   ${color8}QB offline BT magnetic download panel"
 	  echo -e "${gl_kjlan}9.   ${color9}Poste.io mail server program${gl_kjlan}10.  ${color10}RocketChat multi-person online chat system"
 	  echo -e "${gl_kjlan}------------------------"
@@ -8787,7 +8787,7 @@ linux_panel() {
 				check_docker_image_update $docker_name
 
 				clear
-				echo -e "postal service$check_docker $update_status"
+				echo -e "postal services$check_docker $update_status"
 				echo "poste.io is an open source mail server solution,"
 				echo "Video introduction: https://www.bilibili.com/video/BV1wv421C71t?t=0.1"
 
@@ -8890,7 +8890,7 @@ linux_panel() {
 						rm -rf /home/docker/mail
 						local app_no=$sub_choice
 						sed -i "/\b${app_no}\b/d" /home/docker/appno.txt
-						echo "App has been uninstalled"
+						echo "应用已卸载"
 						;;
 
 					*)
@@ -9194,7 +9194,7 @@ linux_panel() {
 				echo ""
 
 				echo "------------------------"
-				echo "1. Install 2. Update 3. Reset password 4. Uninstall"
+				echo "1. 安装           2. 更新           3. 重置密码           4. 卸载"
 				echo "------------------------"
 				echo "0. Return to the previous menu"
 				echo "------------------------"
@@ -10616,7 +10616,7 @@ linux_panel() {
 
 			docker_rum() {
 
-				read -e -p "set up${docker_name}Login user name:" app_use
+				read -e -p "set up${docker_name}Login username:" app_use
 				read -e -p "set up${docker_name}Login password:" app_passwd
 
 				docker run -d \
@@ -10839,7 +10839,7 @@ linux_work() {
 	  send_stats "Backend workspace"
 	  echo -e "Backend workspace"
 	  echo -e "The system will provide you with a workspace that can run permanently in the background, which you can use to perform long-term tasks."
-	  echo -e "Even if you disconnect SSH, the tasks in the workspace will not be interrupted, and the background tasks will persist."
+	  echo -e "Even if you disconnect SSH, the tasks in the workspace will not be interrupted, and the tasks will remain in the background."
 	  echo -e "${gl_huang}hint:${gl_bai}After entering the workspace, use Ctrl+b and then press d alone to exit the workspace!"
 	  echo -e "${gl_kjlan}------------------------"
 	  echo "List of currently existing workspaces"
@@ -11040,7 +11040,7 @@ linux_Settings() {
 	  echo -e "${gl_kjlan}17.  ${gl_bai}Firewall Advanced Manager${gl_kjlan}18.  ${gl_bai}Modify hostname"
 	  echo -e "${gl_kjlan}19.  ${gl_bai}Switch system update source${gl_kjlan}20.  ${gl_bai}Scheduled task management"
 	  echo -e "${gl_kjlan}------------------------"
-	  echo -e "${gl_kjlan}21.  ${gl_bai}Native host resolution${gl_kjlan}22.  ${gl_bai}SSH defense program"
+	  echo -e "${gl_kjlan}21.  ${gl_bai}Native host resolution${gl_kjlan}22.  ${gl_bai}SSH防御程序"
 	  echo -e "${gl_kjlan}23.  ${gl_bai}Current limiting automatic shutdown${gl_kjlan}24.  ${gl_bai}ROOT private key login mode"
 	  echo -e "${gl_kjlan}25.  ${gl_bai}TG-bot system monitoring and early warning${gl_kjlan}26.  ${gl_bai}Fix OpenSSH high-risk vulnerabilities"
 	  echo -e "${gl_kjlan}27.  ${gl_bai}Red Hat Linux kernel upgrade${gl_kjlan}28.  ${gl_bai}Linux system kernel parameter optimization${gl_huang}★${gl_bai}"
@@ -11096,14 +11096,14 @@ linux_Settings() {
 			echo "python version management"
 			echo "Video introduction: https://www.bilibili.com/video/BV1Pm42157cK?t=0.1"
 			echo "---------------------------------------"
-			echo "This function can seamlessly install any version officially supported by python!"
+			echo "This function can seamlessly install any version officially supported by Python!"
 			local VERSION=$(python3 -V 2>&1 | awk '{print $2}')
 			echo -e "Current python version number:${gl_huang}$VERSION${gl_bai}"
 			echo "------------"
 			echo "Recommended versions: 3.12 3.11 3.10 3.9 3.8 2.7"
 			echo "Check more versions: https://www.python.org/downloads/"
 			echo "------------"
-			read -e -p "Enter the python version number you want to install (enter 0 to exit):" py_new_v
+			read -e -p "输入你要安装的python版本号（输入0退出）: " py_new_v
 
 
 			if [[ "$py_new_v" == "0" ]]; then
@@ -11169,7 +11169,7 @@ EOF
 			rm -rf $(pyenv root)/cache/*
 
 			local VERSION=$(python -V 2>&1 | awk '{print $2}')
-			echo -e "Current python version number:${gl_huang}$VERSION${gl_bai}"
+			echo -e "当前python版本号: ${gl_huang}$VERSION${gl_bai}"
 			send_stats "Script PY version switching"
 
 			  ;;
@@ -11474,7 +11474,7 @@ EOF
 			done
 
 			echo ""
-			echo "32-bit random password"
+			echo "32位随机密码"
 			echo "------------------------"
 			for i in {1..5}; do
 				local password=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c32)
@@ -11499,7 +11499,7 @@ EOF
 
 				# Show time zone and time
 				echo "Current system time zone:$timezone"
-				echo "Current system time:$current_time"
+				echo "当前系统时间：$current_time"
 
 				echo ""
 				echo "time zone switch"
@@ -11514,7 +11514,7 @@ EOF
 				echo "Europe"
 				echo "11. London, UK time 12. Paris, France time"
 				echo "13. Berlin Time, Germany 14. Moscow Time, Russia"
-				echo "15. Utracht Time, Netherlands 16. Madrid Time, Spain"
+				echo "15. Utrecht Time, Netherlands 16. Madrid Time, Spain"
 				echo "------------------------"
 				echo "America"
 				echo "21. US Western Time 22. US Eastern Time"
@@ -12070,7 +12070,7 @@ EOF
 			  echo "One-stop system tuning"
 			  echo "------------------------------------------------"
 			  echo "The following content will be operated and optimized"
-			  echo "1. Update the system to the latest"
+			  echo "1. 更新系统到最新"
 			  echo "2. Clean up system junk files"
 			  echo -e "3. Set up virtual memory${gl_huang}1G${gl_bai}"
 			  echo -e "4. Set the SSH port number to${gl_huang}5522${gl_bai}"
@@ -12078,10 +12078,10 @@ EOF
 			  echo -e "6. Turn on${gl_huang}BBR${gl_bai}accelerate"
 			  echo -e "7. Set time zone to${gl_huang}Shanghai${gl_bai}"
 			  echo -e "8. Automatically optimize DNS addresses${gl_huang}Overseas: 1.1.1.1 8.8.8.8 Domestic: 223.5.5.5${gl_bai}"
-			  echo -e "9. Install basic tools${gl_huang}docker wget sudo tar unzip socat btop nano vim${gl_bai}"
+			  echo -e "9. 安装基础工具${gl_huang}docker wget sudo tar unzip socat btop nano vim${gl_bai}"
 			  echo -e "10. Linux system kernel parameter optimization switches to${gl_huang}Balanced optimization mode${gl_bai}"
 			  echo "------------------------------------------------"
-			  read -e -p "Are you sure you want one-click maintenance? (Y/N):" choice
+			  read -e -p "确定一键保养吗？(Y/N): " choice
 
 			  case "$choice" in
 				[Yy])
@@ -12177,7 +12177,7 @@ EOF
 			  echo "------------------------------------------------"
 			  echo -e "Current status:$status_message"
 			  echo "--------------------"
-			  echo "1. Start collection"
+			  echo "1. 开启采集"
 			  echo "2. Close collection"
 			  echo "--------------------"
 			  echo "0. Return to the previous menu"
@@ -12492,7 +12492,7 @@ run_commands_on_servers() {
 		local username=${SERVER_ARRAY[i+3]}
 		local password=${SERVER_ARRAY[i+4]}
 		echo
-		echo -e "${gl_huang}Connect to$name ($hostname)...${gl_bai}"
+		echo -e "${gl_huang}connect to$name ($hostname)...${gl_bai}"
 		# sshpass -p "$password" ssh -o StrictHostKeyChecking=no "$username@$hostname" -p "$port" "$1"
 		sshpass -p "$password" ssh -t -o StrictHostKeyChecking=no "$username@$hostname" -p "$port" "$1"
 	done
@@ -12643,7 +12643,7 @@ echo "------------------------"
 echo -e "${gl_zi}V.PS 6.9 dollars per month Tokyo Softbank 2 cores 1G memory 20G hard drive 1T traffic per month${gl_bai}"
 echo -e "${gl_bai}URL: https://vps.hosting/cart/tokyo-cloud-kvm-vps/?id=148&?affid=1355&?affid=1355${gl_bai}"
 echo "------------------------"
-echo -e "${gl_kjlan}More popular VPS offers${gl_bai}"
+echo -e "${gl_kjlan}More popular VPS deals${gl_bai}"
 echo -e "${gl_bai}Website: https://kejilion.pro/topvps/${gl_bai}"
 echo "------------------------"
 echo ""
