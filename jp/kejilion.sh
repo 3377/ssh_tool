@@ -3247,7 +3247,7 @@ ldnmp_wp() {
   restart_ldnmp
   nginx_web_on
 # echo "数据库名: $dbname"
-# echo "用户名: $dbuse"
+# エコー「ユーザー名: $dbuse」
 # echo "密码: $dbusepasswd"
 # echo "数据库地址: mysql"
 # echo "表前缀: wp_"
